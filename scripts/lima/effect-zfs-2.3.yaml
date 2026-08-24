@@ -1,0 +1,54 @@
+# Lima guest for Linux ZFS 2.3+ live tests.
+# Ubuntu 25.04 (plucky) ships zfsutils-linux 2.3.1.
+#
+#   limactl start --yes scripts/lima/effect-zfs-2.3.yaml
+#   bash scripts/lima-live-2.3.sh
+minimumLimaVersion: 1.1.0
+base:
+- template://ubuntu-25.04
+vmType: vz
+cpus: 4
+memory: 4GiB
+disk: 20GiB
+containerd:
+  user: false
+  system: false
+provision:
+- mode: system
+  script: |
+    #!/bin/bash
+    set -euxo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y --no-install-recommends \
+      ca-certificates curl xz-utils rsync \
+      zfsutils-linux
+    extra="linux-modules-extra-$(uname -r)"
+    if apt-get install -y --no-install-recommends "$extra"; then
+      true
+    else
+      apt-get install -y --no-install-recommends zfs-dkms
+    fi
+    if [[ ! -x /usr/local/bin/node ]]; then
+      arch="$(uname -m)"
+      case "$arch" in
+        aarch64|arm64) narch=linux-arm64 ;;
+        x86_64) narch=linux-x64 ;;
+        *) echo "unsupported arch $arch" >&2; exit 1 ;;
+      esac
+      ver=v22.18.0
+      curl -fsSL "https://nodejs.org/dist/${ver}/node-${ver}-${narch}.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1
+    fi
+    ln -sf /usr/local/bin/node /usr/local/bin/nodejs
+    command -v node
+    node -v
+    command -v npm
+    command -v zfs
+    command -v zpool
+- mode: boot
+  script: |
+    #!/bin/bash
+    set -euxo pipefail
+    modprobe zfs || true
+    zfs version || true

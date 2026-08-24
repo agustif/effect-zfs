@@ -1,0 +1,6 @@
+node_modules/
+dist/
+vendor/openzfs/
+.DS_Store
+*.zip
+.grok/

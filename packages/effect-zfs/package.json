@@ -1,0 +1,16 @@
+{
+  "name": "effect-zfs",
+  "version": "0.0.0-alpha.0",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./cli": "./src/Cli.ts",
+    "./test": "./src/Test.ts",
+    "./native": "./src/Native.ts"
+  },
+  "peerDependencies": {
+    "effect": ">=4.0.0-rc.111 <5"
+  }
+}

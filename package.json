@@ -1,0 +1,25 @@
+{
+  "name": "effect-zfs-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "generate": "node packages/codegen/src/generate-all.mjs",
+    "typecheck": "tsc -p packages/effect-zfs --noEmit && tsc -p packages/effect-zfs/tsconfig.typetest.json --noEmit",
+    "test": "node --test packages/codegen/test/*.test.mjs && vitest run",
+    "test:live": "bash scripts/lima-live.sh",
+    "test:live:2.3": "bash scripts/lima-live-2.3.sh",
+    "check": "npm run typecheck && npm test",
+    "check:sandbox": "tsc -p tsconfig.sandbox.json --noEmit && npm test",
+    "snapshot": "bash scripts/snapshot.sh"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "4.0.0-rc.111",
+    "@effect/vitest": "4.0.0-rc.111",
+    "effect": "4.0.0-rc.111",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}

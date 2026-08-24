@@ -1,0 +1,9 @@
+{
+  "name": "@effect-zfs/codegen",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate-all.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}

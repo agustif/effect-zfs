@@ -1,0 +1,1046 @@
+{
+  "operations": [
+    {
+      "id": "Dataset.List",
+      "errors": [
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Get",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Set",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "PropertyReadOnly",
+        "PropertyNotApplicable",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Inherit",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "PropertyNotInheritable",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.CreateFilesystem",
+      "errors": [
+        "DatasetAlreadyExists",
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "EncryptionFailure",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.CreateVolume",
+      "errors": [
+        "DatasetAlreadyExists",
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "EncryptionFailure",
+        "PermissionDenied",
+        "OutOfSpace",
+        "VolumeTooBig",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Destroy",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Create",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "PermissionDenied",
+        "OutOfSpace",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Destroy",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Clone",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "CrossTarget",
+        "InvalidName",
+        "InvalidProperty",
+        "PermissionDenied",
+        "OutOfSpace",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.List",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Rollback",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Promote",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "DatasetBusy",
+        "CrossTarget",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Rename",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "DatasetBusy",
+        "CrossTarget",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Rename",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "DatasetBusy",
+        "CrossTarget",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.List",
+      "errors": [
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Get",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PoolUnavailable",
+        "InvalidProperty",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Set",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PoolUnavailable",
+        "InvalidProperty",
+        "PropertyReadOnly",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Status",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PoolUnavailable",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Create",
+      "errors": [
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "InvalidProperty",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Destroy",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Trim",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "DatasetBusy",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Initialize",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "DatasetBusy",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Clear",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Reopen",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "DatasetBusy",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Sync",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Scrub",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "DatasetBusy",
+        "Resilvering",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Resilver",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "DatasetBusy",
+        "Resilvering",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.Send",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidBackupStream",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.SendSpace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidBackupStream",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.SendProgress",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidBackupStream",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.Receive",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "InvalidProperty",
+        "InvalidBackupStream",
+        "BadRestore",
+        "CrossTarget",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.AbortReceive",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "BadRestore",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Hold",
+      "errors": [
+        "DatasetNotFound",
+        "HoldTagExists",
+        "HoldTagTooLong",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Holds",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Release",
+      "errors": [
+        "DatasetNotFound",
+        "HoldTagNotFound",
+        "HoldTagTooLong",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Mount.Mount",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "MountFailed",
+        "EncryptionFailure",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Mount.Unmount",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnmountFailed",
+        "EncryptionFailure",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Mount.Share",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "ShareFailed",
+        "EncryptionFailure",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Mount.Unshare",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "ShareFailed",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Bookmark.Create",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "PermissionDenied",
+        "OutOfSpace",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Bookmark.Destroy",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Bookmark.List",
+      "errors": [
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Bookmark.Get",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Crypto.LoadKey",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "EncryptionFailure",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Crypto.UnloadKey",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "EncryptionFailure",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Crypto.ChangeKey",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "EncryptionFailure",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Events",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.EventsClear",
+      "errors": [
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.EventsSeek",
+      "errors": [
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Iostat",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Wait",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.History",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Prefetch",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Import",
+      "errors": [
+        "DatasetAlreadyExists",
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "InvalidProperty",
+        "PropertyReadOnly",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "PoolActive"
+      ]
+    },
+    {
+      "id": "Pool.Export",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable"
+      ]
+    },
+    {
+      "id": "Pool.Reguid",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable"
+      ]
+    },
+    {
+      "id": "Pool.Upgrade",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable"
+      ]
+    },
+    {
+      "id": "Pool.LabelClear",
+      "errors": [
+        "DatasetBusy",
+        "InvalidName",
+        "BadPath",
+        "PermissionDenied"
+      ]
+    },
+    {
+      "id": "Pool.Checkpoint",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetBusy",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "CheckpointExists",
+        "CheckpointDiscarding",
+        "NoCheckpoint"
+      ]
+    },
+    {
+      "id": "Dataset.Allow",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidWho",
+        "InvalidPermission",
+        "InvalidPermissionSet",
+        "DelegationDisabled",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Unallow",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidWho",
+        "InvalidPermission",
+        "InvalidPermissionSet",
+        "DelegationDisabled",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.ListAllow",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "DelegationDisabled",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Userspace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Groupspace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Projectspace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Project",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Program",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Snapshot.Redact",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Wait",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Diff",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Zfs.Version",
+      "errors": [
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Zone",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Unzone",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.GetBootenv",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.SetBootenv",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "OutOfSpace",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.DdtPrune",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Condense",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Add",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "InvalidDevice",
+        "BadPath",
+        "DeviceOverflow",
+        "InvalidVdevConfig",
+        "VdevNotSupported",
+        "DeviceOpenFailed",
+        "DeviceIsSpare",
+        "DatasetBusy",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Remove",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "NoReplicas",
+        "InvalidVdevConfig",
+        "PoolNotSupported",
+        "PoolInvalidArgument",
+        "DatasetBusy",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Attach",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "NoSuchDevice",
+        "BadAttachTarget",
+        "InvalidDevice",
+        "BadPath",
+        "DeviceIsSpare",
+        "DeviceIsCache",
+        "Resilvering",
+        "InvalidVdevConfig",
+        "DeviceOpenFailed",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Detach",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "BadAttachTarget",
+        "NoReplicas",
+        "DeviceIsSpare",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Replace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "NoSuchDevice",
+        "BadAttachTarget",
+        "InvalidDevice",
+        "BadPath",
+        "DeviceIsSpare",
+        "DeviceIsCache",
+        "Resilvering",
+        "InvalidVdevConfig",
+        "DeviceOpenFailed",
+        "PermissionDenied",
+        "OutOfSpace",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Split",
+      "errors": [
+        "DatasetNotFound",
+        "DatasetAlreadyExists",
+        "InvalidName",
+        "InvalidProperty",
+        "NoSuchDevice",
+        "InvalidVdevConfig",
+        "BadPath",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Online",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "PostSplitOnline",
+        "DeviceOpenFailed",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Offline",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "NoReplicas",
+        "DatasetBusy",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Upgrade",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.Exists",
+      "errors": [
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.GetVdev",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "NoSuchDevice",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.SetVdev",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidProperty",
+        "PropertyReadOnly",
+        "NoSuchDevice",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Replication.SnaprangeSpace",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "InvalidBackupStream",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    }
+  ]
+}

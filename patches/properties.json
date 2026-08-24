@@ -1,0 +1,21 @@
+{
+  "dataset": {
+    "compression": {"codec":"enum"},
+    "atime": {"codec":"boolean"},
+    "recordsize": {"codec":"bytes"},
+    "quota": {"codec":"bytesOrNone"},
+    "used": {"codec":"bytes"},
+    "available": {"codec":"bytes"},
+    "mountpoint": {"codec":"string"},
+    "encryption": {"codec":"enum"},
+    "keyformat": {"codec":"enum"}
+  },
+  "pool": {
+    "ashift": {"codec":"integer"},
+    "autotrim": {"codec":"boolean"},
+    "readonly": {"codec":"boolean"},
+    "size": {"codec":"bytes"},
+    "free": {"codec":"bytes"},
+    "failmode": {"codec":"enum"}
+  }
+}
