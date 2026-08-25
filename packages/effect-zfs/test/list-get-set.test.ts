@@ -1,22 +1,22 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Sink, Stream } from "effect"
 import { ChildProcessSpawner } from "effect/unstable/process"
-import * as ZfsCli from "../src/Cli.js"
 import {
   GetProperty,
   InheritProperty,
   ListDatasets,
+  propertyName,
   PropertySort,
-  SetProperty,
-  propertyName
-} from "../src/Args.js"
-import { Datasets } from "../src/Dataset.js"
+  SetProperty
+} from "../src/args/index.js"
+import * as ZfsCli from "../src/cli/index.js"
 import { DatasetProperty } from "../src/generated/properties.generated.js"
-import { datasetName } from "../src/Name.js"
-import { ZfsProtocol } from "../src/Protocol.js"
-import { PropertyGetRow } from "../src/Schemas.js"
-import * as Test from "../src/Test.js"
 import { layer } from "../src/index.js"
+import { ZfsProtocol } from "../src/protocol/protocol.js"
+import * as Test from "../src/protocol/test.js"
+import { PropertyGetRow } from "../src/schema/models.js"
+import { datasetName } from "../src/schema/name.js"
+import { Datasets } from "../src/services/datasets.js"
 
 const bytes = (text: string) => new TextEncoder().encode(text)
 
@@ -58,13 +58,15 @@ describe("list/get/set/inherit flags", () => {
     let args: ReadonlyArray<string> = []
     return Effect.gen(function*() {
       const protocol = yield* ZfsProtocol
-      const rows = yield* protocol.listDatasets(new ListDatasets({
-        root: datasetName("tank/data"),
-        types: ["snapshot"],
-        depth: 1,
-        sort: [new PropertySort({ property: propertyName("name"), descending: true })],
-        columns: [propertyName("guid")]
-      }))
+      const rows = yield* protocol.listDatasets(
+        new ListDatasets({
+          root: datasetName("tank/data"),
+          types: ["snapshot"],
+          depth: 1,
+          sort: [new PropertySort({ property: propertyName("name"), descending: true })],
+          columns: [propertyName("guid")]
+        })
+      )
       assert.deepStrictEqual(args, [
         "list",
         "-Hp",
@@ -93,14 +95,16 @@ describe("list/get/set/inherit flags", () => {
     let args: ReadonlyArray<string> = []
     return Effect.gen(function*() {
       const protocol = yield* ZfsProtocol
-      const rows = yield* protocol.getProperties(new GetProperty({
-        scope: "dataset",
-        name: datasetName("tank/data"),
-        property: propertyName("all"),
-        recursive: true,
-        types: ["filesystem", "bookmark"],
-        sources: ["local", "received"]
-      }))
+      const rows = yield* protocol.getProperties(
+        new GetProperty({
+          scope: "dataset",
+          name: datasetName("tank/data"),
+          property: propertyName("all"),
+          recursive: true,
+          types: ["filesystem", "bookmark"],
+          sources: ["local", "received"]
+        })
+      )
       assert.deepStrictEqual(args, [
         "get",
         "-Hp",
@@ -122,7 +126,7 @@ describe("list/get/set/inherit flags", () => {
       return Effect.succeed(handle({
         stdout: Stream.make(bytes(
           "tank/data\tcompression\tlz4\t-\tlocal\n" +
-          "tank/data\tatime\toff\t-\tdefault\n"
+            "tank/data\tatime\toff\t-\tdefault\n"
         ))
       }))
     })))
@@ -132,14 +136,16 @@ describe("list/get/set/inherit flags", () => {
     let args: ReadonlyArray<string> = []
     return Effect.gen(function*() {
       const protocol = yield* ZfsProtocol
-      yield* protocol.setProperty(new SetProperty({
-        scope: "dataset",
-        name: datasetName("tank/a"),
-        property: propertyName("compression"),
-        value: "lz4",
-        unmounted: true,
-        targets: [datasetName("tank/b")]
-      }))
+      yield* protocol.setProperty(
+        new SetProperty({
+          scope: "dataset",
+          name: datasetName("tank/a"),
+          property: propertyName("compression"),
+          value: "lz4",
+          unmounted: true,
+          targets: [datasetName("tank/b")]
+        })
+      )
       assert.deepStrictEqual(args, [
         "set",
         "-u",
@@ -157,12 +163,14 @@ describe("list/get/set/inherit flags", () => {
     let args: ReadonlyArray<string> = []
     return Effect.gen(function*() {
       const protocol = yield* ZfsProtocol
-      yield* protocol.inheritProperty(new InheritProperty({
-        name: datasetName("tank/data"),
-        property: propertyName("atime"),
-        recursive: true,
-        received: true
-      }))
+      yield* protocol.inheritProperty(
+        new InheritProperty({
+          name: datasetName("tank/data"),
+          property: propertyName("atime"),
+          recursive: true,
+          received: true
+        })
+      )
       assert.deepStrictEqual(args, [
         "inherit",
         "-r",
@@ -209,12 +217,14 @@ describe("list/get/set/inherit flags", () => {
     }).pipe(Effect.provide(layer.pipe(Layer.provide(Test.layer({
       getProperties: (input) => {
         captured.getAll = input.property
-        return [new PropertyGetRow({
-          name: input.name,
-          property: "compression",
-          value: "lz4",
-          source: "local"
-        })]
+        return [
+          new PropertyGetRow({
+            name: input.name,
+            property: "compression",
+            value: "lz4",
+            source: "local"
+          })
+        ]
       },
       inheritProperty: (input) => {
         captured.inheritRecursive = input.recursive

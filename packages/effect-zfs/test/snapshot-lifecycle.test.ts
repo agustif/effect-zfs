@@ -1,13 +1,13 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Stream } from "effect"
-import * as ZfsCli from "../src/Cli.js"
-import { Datasets } from "../src/Dataset.js"
-import { Snapshots } from "../src/Snapshot.js"
-import { datasetName, snapshotName } from "../src/Name.js"
-import { CommandResult, ZfsProcess, type ZfsCommand } from "../src/Process.js"
+import * as ZfsCli from "../src/cli/index.js"
 import { layer } from "../src/index.js"
+import { CommandResult, type ZfsCommand, ZfsProcess } from "../src/protocol/process.js"
+import { datasetName, snapshotName } from "../src/schema/name.js"
+import { Datasets } from "../src/services/datasets.js"
+import { Snapshots } from "../src/services/snapshots.js"
 
-const recorded: ZfsCommand[] = []
+const recorded: Array<ZfsCommand> = []
 
 const fakeProcess = Layer.succeed(
   ZfsProcess,
@@ -20,8 +20,7 @@ const fakeProcess = Layer.succeed(
       return Effect.succeed(new CommandResult({ command, stdout, stderr: "", exitCode: 0 }))
     },
     stream: () => Stream.empty,
-    runWithInput: (command) =>
-      Effect.succeed(new CommandResult({ command, stdout: "", stderr: "", exitCode: 0 }))
+    runWithInput: (command) => Effect.succeed(new CommandResult({ command, stdout: "", stderr: "", exitCode: 0 }))
   })
 )
 
@@ -63,6 +62,5 @@ describe("snapshot lifecycle CLI argv", () => {
         ["zfs", "rename", "-r", "tank/src@old", "tank/src@new"],
         ["zfs", "rename", "-f", "-p", "-u", "tank/src", "tank/dst"]
       ])
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 })

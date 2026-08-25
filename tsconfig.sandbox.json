@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "noImplicitAny": false,
-    "rootDir": "."
-  },
-  "include": ["packages/effect-zfs/src/**/*.ts", "sandbox-shims/**/*.d.ts", "sandbox-shims/type-tests/**/*.ts"]
-}

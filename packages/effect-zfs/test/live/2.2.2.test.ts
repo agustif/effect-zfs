@@ -1,33 +1,35 @@
+import { assert, describe, layer } from "@effect/vitest"
+import { Effect, Result, Stream } from "effect"
 import { mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { assert, describe, it, layer } from "@effect/vitest"
-import { Effect, Result, Stream } from "effect"
-import { Disk, EncodedProperty, File, Spare, devicePath, propertyName, vdevId, wrappingKey } from "../../src/Args.js"
-import { classifyCliError } from "../../src/Error.js"
-import { CommandResult } from "../../src/Process.js"
-import { Crypto } from "../../src/Crypto.js"
-import { Datasets } from "../../src/Dataset.js"
-import { Mount } from "../../src/Mount.js"
-import { Pools } from "../../src/Pool.js"
-import { Replication } from "../../src/Replication.js"
-import { Bookmarks } from "../../src/Bookmark.js"
-import { Snapshots } from "../../src/Snapshot.js"
-import { DatasetProperty, PoolProperty, VdevProperty } from "../../src/generated/properties.generated.js"
-import { vdevConfig } from "../../src/Schemas.js"
-import { gib, mib, spaMinDevSize, vdevSize, volBlockSize, volumeSize } from "../../src/Limits.js"
-import { datasetName, poolName, snapshotName, snapshotRange } from "../../src/Name.js"
-import { command } from "../../src/Protocol.js"
-import { execute } from "../../src/internal/execute.js"
-import { atLeast, minimumSupported, parseZfsVersionLine } from "../../src/Version.js"
 import {
-  ChildProcess,
-  ChildProcessSpawner,
-  Live,
-  TestPool,
-  fileBackedPool,
-  hasLiveLinuxZfs
-} from "./harness.js"
+  devicePath,
+  Disk,
+  EncodedProperty,
+  File,
+  propertyName,
+  Spare,
+  vdevId,
+  wrappingKey
+} from "../../src/args/index.js"
+import { execute } from "../../src/cli/execute.js"
+import { classifyCliError } from "../../src/errors/classify.js"
+import { DatasetProperty, PoolProperty, VdevProperty } from "../../src/generated/properties.generated.js"
+import { CommandResult } from "../../src/protocol/process.js"
+import { command } from "../../src/protocol/protocol.js"
+import { gib, mib, spaMinDevSize, vdevSize, volBlockSize, volumeSize } from "../../src/schema/limits.js"
+import { vdevConfig } from "../../src/schema/models.js"
+import { datasetName, poolName, snapshotName, snapshotRange } from "../../src/schema/name.js"
+import { atLeast, minimumSupported, parseZfsVersionLine } from "../../src/schema/version.js"
+import { Bookmarks } from "../../src/services/bookmarks.js"
+import { Crypto } from "../../src/services/crypto.js"
+import { Datasets } from "../../src/services/datasets.js"
+import { Mount } from "../../src/services/mount.js"
+import { Pools } from "../../src/services/pools.js"
+import { Replication } from "../../src/services/replication.js"
+import { Snapshots } from "../../src/services/snapshots.js"
+import { ChildProcess, ChildProcessSpawner, fileBackedPool, hasLiveLinuxZfs, Live, TestPool } from "./harness.js"
 
 describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
   layer(Live, { excludeTestServices: true })((it) => {
@@ -37,8 +39,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         const raw = yield* spawner.string(ChildProcess.make("zfs", ["version"], { extendEnv: true }))
         const version = parseZfsVersionLine(raw.split("\n")[0] ?? raw)
         assert.isTrue(atLeast(version, minimumSupported))
-      })
-    )
+      }))
 
     it.effect("covers dataset, snapshot, pool, and streamed send/receive", () =>
       Effect.gen(function*() {
@@ -143,8 +144,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         assert.ok(status.scan === undefined || typeof status.scan === "object")
 
         yield* datasets.destroy(volume, { force: true })
-      })
-    )
+      }))
 
     it.effect("covers snapshot list, rollback, promote, and rename", () =>
       Effect.gen(function*() {
@@ -203,17 +203,17 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           force: true
         })
         assert.strictEqual(nested.name, `${env.pool}/parented/leaf`)
-      })
-    )
+      }))
 
     it.effect("classifies nonexistent dataset", () =>
       Effect.gen(function*() {
         const env = yield* TestPool
         const datasets = yield* Datasets
-        const error = yield* datasets.get(datasetName(`${env.pool}/missing`), DatasetProperty.compression).pipe(Effect.flip)
+        const error = yield* datasets.get(datasetName(`${env.pool}/missing`), DatasetProperty.compression).pipe(
+          Effect.flip
+        )
         assert.strictEqual(error._tag, "DatasetNotFound")
-      })
-    )
+      }))
 
     it.effect("adds a spare and offlines/onlines a mirror leaf", () =>
       Effect.gen(function*() {
@@ -229,8 +229,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* pools.offline(acquired.pool, [vdevId(diskA)], { temporary: true })
         yield* pools.online(acquired.pool, [vdevId(diskA)])
         yield* pools.remove(acquired.pool, [vdevId(sparePath)])
-      })
-    )
+      }))
 
     it.effect("covers bookmark create, list, get props, and destroy", () =>
       Effect.gen(function*() {
@@ -256,8 +255,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         assert.isFalse(after.some((row) => row.name === bm.name))
         const missing = yield* bookmarks.get(bm, DatasetProperty.creation).pipe(Effect.flip)
         assert.strictEqual(missing._tag, "DatasetNotFound")
-      })
-    )
+      }))
 
     it.effect("classifies duplicate create", () =>
       Effect.gen(function*() {
@@ -267,8 +265,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* datasets.createFilesystem({ name, properties: { mountpoint: "none" } })
         const error = yield* datasets.createFilesystem({ name, properties: { mountpoint: "none" } }).pipe(Effect.flip)
         assert.strictEqual(error._tag, "DatasetAlreadyExists")
-      })
-    )
+      }))
 
     it.effect("classifies invalid property value and read-only set", () =>
       Effect.gen(function*() {
@@ -278,12 +275,13 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           name: datasetName(`${env.pool}/proptarget`),
           properties: { mountpoint: "none" }
         })
-        const invalid = yield* execute("Dataset.Set", command("zfs", "set", "compression=not-a-codec", fs.name)).pipe(Effect.flip)
+        const invalid = yield* execute("Dataset.Set", command("zfs", "set", "compression=not-a-codec", fs.name)).pipe(
+          Effect.flip
+        )
         assert.ok(invalid._tag === "InvalidProperty" || invalid._tag === "UnknownZfsError", invalid._tag)
         const readonly = yield* execute("Dataset.Set", command("zfs", "set", "used=1", fs.name)).pipe(Effect.flip)
         assert.ok(readonly._tag === "PropertyReadOnly" || readonly._tag === "UnknownZfsError", readonly._tag)
-      })
-    )
+      }))
 
     it.effect("hold blocks snapshot destroy as DatasetBusy", () =>
       Effect.gen(function*() {
@@ -307,8 +305,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         assert.ok(dup._tag === "HoldTagExists" || dup._tag === "UnknownZfsError", dup._tag)
         yield* snapshots.release(snap, "keep")
         yield* snapshots.destroy(snap)
-      })
-    )
+      }))
 
     it.effect("classifies busy snapshot destroy while a clone exists", () =>
       Effect.gen(function*() {
@@ -323,8 +320,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* snapshots.clone(snap, datasetName(`${env.pool}/busyclone`), { mountpoint: "none" })
         const error = yield* snapshots.destroy(snap).pipe(Effect.flip)
         assert.ok(error._tag === "DatasetBusy" || error._tag === "UnknownZfsError", error._tag)
-      })
-    )
+      }))
 
     it.effect("classifies a bad receive stream", () =>
       Effect.gen(function*() {
@@ -339,8 +335,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           error._tag === "InvalidBackupStream" || error._tag === "BadRestore" || error._tag === "UnknownZfsError",
           error._tag
         )
-      })
-    )
+      }))
 
     it.effect("classifies abort of a receive with no resume state", () =>
       Effect.gen(function*() {
@@ -351,8 +346,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           error._tag === "DatasetNotFound" || error._tag === "BadRestore" || error._tag === "UnknownZfsError",
           error._tag
         )
-      })
-    )
+      }))
 
     it.effect("classifies cross-pool clone", () =>
       Effect.gen(function*() {
@@ -367,8 +361,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         const snap = yield* snapshots.create(fs, "x")
         const error = yield* snapshots.clone(snap, datasetName(`${other.pool}/crossdst`)).pipe(Effect.flip)
         assert.ok(error._tag === "CrossTarget" || error._tag === "UnknownZfsError", error._tag)
-      })
-    )
+      }))
 
     it.effect("classifies out of space on a minimum-size disposable pool", () =>
       Effect.gen(function*() {
@@ -378,9 +371,11 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           name: datasetName(`${tiny.pool}/huge`),
           size: volumeSize(gib(1))
         }).pipe(Effect.flip)
-        assert.ok(error._tag === "OutOfSpace" || error._tag === "UnknownZfsError" || error._tag === "VolumeTooBig", error._tag)
-      })
-    )
+        assert.ok(
+          error._tag === "OutOfSpace" || error._tag === "UnknownZfsError" || error._tag === "VolumeTooBig",
+          error._tag
+        )
+      }))
 
     it.effect("clears, reopens, syncs, and initializes a process-created pool", () =>
       Effect.gen(function*() {
@@ -398,8 +393,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
             () => Effect.void
           )
         )
-      })
-    )
+      }))
 
     it.effect("does not mount a filesystem with mountpoint=none", () =>
       Effect.gen(function*() {
@@ -416,8 +410,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         assert.ok(error._tag === "MountFailed" || error._tag === "UnknownZfsError", error._tag)
         const share = yield* mount.share({ name: fs.name }).pipe(Effect.flip)
         assert.ok(share._tag === "ShareFailed" || share._tag === "UnknownZfsError", share._tag)
-      })
-    )
+      }))
 
     it.effect("mounts and unmounts a filesystem at an explicit temp path", () =>
       Effect.gen(function*() {
@@ -436,8 +429,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* mount.unmount({ target: fs.name })
         const off = yield* datasets.get(fs, DatasetProperty.mounted)
         assert.strictEqual(off.value, false)
-      })
-    )
+      }))
 
     it.effect("exports and imports a process-created effectzfs_test_* pool", () =>
       Effect.gen(function*() {
@@ -461,8 +453,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* pools.export(acquired.pool)
         yield* pools.labelClear(join(acquired.dir, "a.img"), { force: true })
         yield* pools.labelClear(join(acquired.dir, "b.img"), { force: true })
-      })
-    )
+      }))
 
     it.effect("encrypted create, unload-key, load-key, and change-key", () =>
       Effect.gen(function*() {
@@ -498,8 +489,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           name: fs.name,
           wrappingKey: wrappingKey("effect-zfs-passphrase-2")
         })
-      })
-    )
+      }))
 
     it.effect("rejects a volume smaller than SPA_MINBLOCKSIZE as InvalidProperty", () =>
       Effect.gen(function*() {
@@ -510,8 +500,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           size: 511n
         }).pipe(Effect.flip)
         assert.strictEqual(error._tag, "InvalidProperty")
-      })
-    )
+      }))
 
     it.effect("incremental send, sendSpace bigint, and replicate -X exclude", () =>
       Effect.gen(function*() {
@@ -570,8 +559,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         const replicaRows = yield* datasets.list({ root: replica, recursive: true })
         assert.isTrue(replicaRows.some((row) => row.name.includes("/keep") || row.name === replica))
         assert.isFalse(replicaRows.some((row) => row.name.endsWith("/skip")))
-      })
-    )
+      }))
 
     it.effect("creates and destroys a file-backed effectzfs_test_* pool", () =>
       Effect.scoped(Effect.gen(function*() {
@@ -606,10 +594,11 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         yield* pools.destroy(created, { force: true })
         const after = yield* pools.list()
         assert.ok(!after.some((row) => row.name === name))
-        const missing = yield* pools.destroy(poolName("effectzfs_test_missing_pool_zzz"), { force: true }).pipe(Effect.flip)
+        const missing = yield* pools.destroy(poolName("effectzfs_test_missing_pool_zzz"), { force: true }).pipe(
+          Effect.flip
+        )
         assert.strictEqual(missing._tag, "DatasetNotFound")
-      }))
-    )
+      })))
 
     it.effect("reads history, iostat, wait, and events on a test pool without buffering", () =>
       Effect.gen(function*() {
@@ -637,8 +626,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
             () => Effect.void
           )
         )
-      })
-    )
+      }))
 
     it.effect("exists, upgrade, unmounted create, volblocksize, snap range, clone -p, vdev comment", () =>
       Effect.gen(function*() {
@@ -680,8 +668,7 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           const comment = yield* pools.getVdev(env.pool, vdevId(leaf), VdevProperty.comment)
           assert.strictEqual(comment.value, "effect-zfs")
         }
-      })
-    )
+      }))
 
     it.effect("classifies permission denied for unprivileged zfs list", () =>
       Effect.gen(function*() {
@@ -697,14 +684,17 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
           return { stderr, exitCode }
         })).pipe(Effect.result)
         if (outcome._tag === "Failure") return
-        const { stderr, exitCode } = outcome.success
+        const { exitCode, stderr } = outcome.success
         if (exitCode === 0) return
-        const error = classifyCliError("Dataset.List", new CommandResult({
-          command: command("zfs", "list"),
-          stdout: "",
-          stderr,
-          exitCode
-        }))
+        const error = classifyCliError(
+          "Dataset.List",
+          new CommandResult({
+            command: command("zfs", "list"),
+            stdout: "",
+            stderr,
+            exitCode
+          })
+        )
         assert.ok(
           error._tag === "PermissionDenied" || error._tag === "UnknownZfsError",
           error._tag
@@ -712,7 +702,6 @@ describe.skipIf(!hasLiveLinuxZfs)("linux zfs live 2.2.2+", () => {
         if (/permission denied|operation not permitted|unable to open \/dev\/zfs/i.test(stderr)) {
           assert.strictEqual(error._tag, "PermissionDenied")
         }
-      })
-    )
+      }))
   })
 })

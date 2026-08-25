@@ -1041,6 +1041,150 @@
         "PoolUnavailable",
         "UnknownZfsError"
       ]
+    },
+    {
+      "id": "Dataset.Rewrite",
+      "since": "2.3.0",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "BadPath",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Freeze",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.Remap",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.SetVdevPath",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.SetVdevFru",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.InjectFault",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "NoSuchDevice",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.ClearFault",
+      "errors": [
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.ListFaults",
+      "errors": [
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Pool.ErrorLog",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.ObjToPath",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "BadPath",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.DsobjToName",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.NextObj",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Dataset.ObjToStats",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
+    },
+    {
+      "id": "Mount.SmbAcl",
+      "errors": [
+        "DatasetNotFound",
+        "InvalidName",
+        "BadPath",
+        "PermissionDenied",
+        "PoolUnavailable",
+        "UnknownZfsError"
+      ]
     }
   ]
 }

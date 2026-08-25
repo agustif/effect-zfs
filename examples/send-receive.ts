@@ -1,12 +1,6 @@
-import { Effect } from "effect"
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
-import {
-  Datasets,
-  Name,
-  Replication,
-  Snapshots,
-  layer
-} from "effect-zfs"
+import { Effect } from "effect"
+import { Datasets, layer, Name, Replication, Snapshots } from "effect-zfs"
 import * as Cli from "effect-zfs/cli"
 
 const program = Effect.gen(function*() {

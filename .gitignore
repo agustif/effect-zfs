@@ -1,6 +1,8 @@
 node_modules/
 dist/
 vendor/openzfs/
+.generated-specs/
+*.tsbuildinfo
 .DS_Store
 *.zip
 .grok/

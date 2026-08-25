@@ -1,25 +1,19 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Sink, Stream } from "effect"
-import { ChildProcessSpawner } from "effect/unstable/process"
 import { systemError } from "effect/PlatformError"
-import { BookmarkListItem } from "../src/Args.js"
-import { Bookmarks } from "../src/Bookmark.js"
-import * as ZfsCli from "../src/Cli.js"
-import { classifyCliError } from "../src/Error.js"
+import { ChildProcessSpawner } from "effect/unstable/process"
+import { BookmarkListItem } from "../src/args/index.js"
+import * as ZfsCli from "../src/cli/index.js"
+import { classifyCliError } from "../src/errors/classify.js"
 import { DatasetProperty } from "../src/generated/properties.generated.js"
-import {
-  bookmarkComponent,
-  bookmarkName,
-  datasetName,
-  datasetOfBookmark,
-  snapshotName
-} from "../src/Name.js"
-import { command } from "../src/Protocol.js"
-import { PropertyGetRow } from "../src/Schemas.js"
-import { Snapshot } from "../src/Snapshot.js"
-import * as Test from "../src/Test.js"
-import { Dataset, dataset } from "../src/Dataset.js"
 import { layer } from "../src/index.js"
+import { command } from "../src/protocol/protocol.js"
+import * as Test from "../src/protocol/test.js"
+import { PropertyGetRow } from "../src/schema/models.js"
+import { bookmarkComponent, bookmarkName, datasetName, datasetOfBookmark, snapshotName } from "../src/schema/name.js"
+import { Bookmarks } from "../src/services/bookmarks.js"
+import { Dataset, dataset } from "../src/services/datasets.js"
+import { Snapshot } from "../src/services/snapshots.js"
 
 const provided = layer.pipe(
   Layer.provide(Test.layer({
@@ -30,12 +24,13 @@ const provided = layer.pipe(
     listBookmarks: () => [
       new BookmarkListItem({ name: bookmarkName(datasetName("tank/src"), "keep") })
     ],
-    getBookmarkProps: (input) => new PropertyGetRow({
-      name: input.name,
-      property: input.property,
-      value: input.property === "guid" ? "9" : "1700000000",
-      source: "-"
-    })
+    getBookmarkProps: (input) =>
+      new PropertyGetRow({
+        name: input.name,
+        property: input.property,
+        value: input.property === "guid" ? "9" : "1700000000",
+        source: "-"
+      })
   }))
 )
 
@@ -113,8 +108,7 @@ describe("bookmarks", () => {
       const creation = yield* bookmarks.get(created, DatasetProperty.creation)
       assert.strictEqual(creation.value, 1700000000n)
       yield* bookmarks.destroy(created)
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("createBookmark builds zfs bookmark argv", () => {
     const seen: Array<ReadonlyArray<string>> = []
@@ -151,8 +145,7 @@ describe("bookmarks", () => {
         stdout: Stream.make(bytes("tank/src#keep\tbookmark\n")),
         exitCode: 0
       }))
-    })))
-  )
+    }))))
 
   it.effect("destroyBookmark builds zfs destroy argv", () => {
     const seen: Array<ReadonlyArray<string>> = []
@@ -171,11 +164,12 @@ describe("bookmarks", () => {
       const bookmarks = yield* Bookmarks
       const error = yield* bookmarks.destroy(bookmarkName(datasetName("tank/src"), "missing")).pipe(Effect.flip)
       assert.strictEqual(error._tag, "DatasetNotFound")
-    }).pipe(Effect.provide(cli(() => Effect.succeed(handle({
-      stderr: "cannot destroy 'tank/src#missing': dataset does not exist",
-      exitCode: 1
-    })))))
-  )
+    }).pipe(Effect.provide(cli(() =>
+      Effect.succeed(handle({
+        stderr: "cannot destroy 'tank/src#missing': dataset does not exist",
+        exitCode: 1
+      }))
+    ))))
 
   it.effect("maps spawn failure on bookmark create to ZfsTransportError", () =>
     Effect.gen(function*() {
@@ -185,11 +179,12 @@ describe("bookmarks", () => {
         "keep"
       ).pipe(Effect.flip)
       assert.strictEqual(error._tag, "ZfsTransportError")
-    }).pipe(Effect.provide(cli(() => Effect.fail(systemError({
-      _tag: "Unknown",
-      module: "ChildProcess",
-      method: "spawn",
-      description: "execve failed"
-    })))))
-  )
+    }).pipe(Effect.provide(cli(() =>
+      Effect.fail(systemError({
+        _tag: "Unknown",
+        module: "ChildProcess",
+        method: "spawn",
+        description: "execve failed"
+      }))
+    ))))
 })

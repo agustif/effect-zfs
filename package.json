@@ -6,20 +6,39 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "effect-language-service patch",
     "generate": "node packages/codegen/src/generate-all.mjs",
     "typecheck": "tsc -p packages/effect-zfs --noEmit && tsc -p packages/effect-zfs/tsconfig.typetest.json --noEmit",
+    "lint": "eslint --max-warnings 0 packages examples eslint.config.mjs",
+    "lint:fix": "eslint --fix --fix-type problem,suggestion --rule 'import/no-duplicates: off' packages examples eslint.config.mjs",
     "test": "node --test packages/codegen/test/*.test.mjs && vitest run",
+    "test:watch": "vitest",
     "test:live": "bash scripts/lima-live.sh",
     "test:live:2.3": "bash scripts/lima-live-2.3.sh",
-    "check": "npm run typecheck && npm test",
-    "check:sandbox": "tsc -p tsconfig.sandbox.json --noEmit && npm test",
+    "test:live:2.4": "bash scripts/lima-live-2.4.sh",
+    "check": "npm run typecheck && npm run lint && npm test",
     "snapshot": "bash scripts/snapshot.sh"
   },
   "devDependencies": {
+    "@effect/eslint-plugin": "0.3.2",
+    "@effect/language-service": "0.87.2",
     "@effect/platform-node": "4.0.0-rc.111",
     "@effect/vitest": "4.0.0-rc.111",
+    "@eslint/compat": "1.4.1",
+    "@eslint/eslintrc": "3.3.1",
+    "@eslint/js": "9.39.5",
+    "@typescript-eslint/parser": "8.46.4",
     "effect": "4.0.0-rc.111",
+    "eslint": "9.39.5",
+    "eslint-import-resolver-typescript": "3.10.1",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "eslint-plugin-sort-destructure-keys": "2.0.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "8.46.4",
     "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "koffi": "^3.1.6"
   }
 }

@@ -1,25 +1,40 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Stream } from "effect"
-import { Datasets } from "../src/Dataset.js"
-import { Mount } from "../src/Mount.js"
-import { Pools } from "../src/Pool.js"
-import { Bookmarks } from "../src/Bookmark.js"
-import { Replication } from "../src/Replication.js"
-import { Snapshots } from "../src/Snapshot.js"
-import { bookmarkName, datasetName, poolName, snapshotName } from "../src/Name.js"
+import { devicePath, File } from "../src/args/index.js"
+import {
+  DatasetAlreadyExists,
+  DatasetNotFound,
+  errorValueToCode,
+  HoldTagExists,
+  MountFailed
+} from "../src/generated/errors.generated.js"
 import { DatasetProperty } from "../src/generated/properties.generated.js"
-import { CheckpointExists, DatasetAlreadyExists, DatasetNotFound, HoldTagExists, MountFailed, errorValueToCode } from "../src/generated/errors.generated.js"
-import { File, devicePath } from "../src/Args.js"
-import { spaMinDevSize } from "../src/Limits.js"
-import { classifyNativeError, layerFrom, NativeFailure, type NativeBindings, unboundBindings } from "../src/Native.js"
 import { layer } from "../src/index.js"
+import {
+  classifyNativeError,
+  layerFrom,
+  loadLinuxLzc,
+  type NativeBindings,
+  NativeFailure,
+  unboundBindings
+} from "../src/native/index.js"
+import { spaMinDevSize } from "../src/schema/limits.js"
+import { bookmarkName, datasetName, poolName, snapshotName } from "../src/schema/name.js"
+import { Bookmarks } from "../src/services/bookmarks.js"
+import { Datasets } from "../src/services/datasets.js"
+import { Mount } from "../src/services/mount.js"
+import { Pools } from "../src/services/pools.js"
+import { Replication } from "../src/services/replication.js"
+import { Snapshots } from "../src/services/snapshots.js"
 
 const missing = (operation: string) =>
-  Effect.fail(new NativeFailure({
-    operation,
-    code: "EZFS_NOENT",
-    message: "no such dataset"
-  }))
+  Effect.fail(
+    new NativeFailure({
+      operation,
+      code: "EZFS_NOENT",
+      message: "no such dataset"
+    })
+  )
 
 const bindings = (overrides: Partial<NativeBindings> = {}): NativeBindings => ({
   ...unboundBindings(),
@@ -39,22 +54,31 @@ const bindings = (overrides: Partial<NativeBindings> = {}): NativeBindings => ({
   rename: () => Effect.void,
   listPools: () => Effect.succeed([]),
   poolStatus: () => missing("Pool.Status"),
-  createPool: () => Effect.fail(new NativeFailure({
-    operation: "Pool.Create",
-    code: "EZFS_EXISTS",
-    message: "pool exists"
-  })),
+  createPool: () =>
+    Effect.fail(
+      new NativeFailure({
+        operation: "Pool.Create",
+        code: "EZFS_EXISTS",
+        message: "pool exists"
+      })
+    ),
   destroyPool: () => missing("Pool.Destroy"),
-  send: () => Stream.fail(new NativeFailure({
-    operation: "Replication.Send",
-    code: "EZFS_NOENT",
-    message: "no such snapshot"
-  })),
-  unshare: () => Effect.fail(new NativeFailure({
-    operation: "Mount.Unshare",
-    code: "EZFS_SHAREFAILED",
-    message: "native share not bound"
-  })),
+  send: () =>
+    Stream.fail(
+      new NativeFailure({
+        operation: "Replication.Send",
+        code: "EZFS_NOENT",
+        message: "no such snapshot"
+      })
+    ),
+  unshare: () =>
+    Effect.fail(
+      new NativeFailure({
+        operation: "Mount.Unshare",
+        code: "EZFS_SHAREFAILED",
+        message: "native share not bound"
+      })
+    ),
   sendSpace: () => missing("Replication.SendSpace"),
   sendProgress: () => missing("Replication.SendProgress"),
   getBookmarkProps: () => missing("Bookmark.Get"),
@@ -69,21 +93,29 @@ const bindings = (overrides: Partial<NativeBindings> = {}): NativeBindings => ({
 })
 
 describe("native errno mapping", () => {
+  it("does not load libzfs_core off Linux", () => {
+    if (process.platform !== "linux") assert.isUndefined(loadLinuxLzc())
+  })
+
   it("maps EZFS_NODEVICE to NoSuchDevice for Pool.Offline", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Pool.Offline",
-      code: "EZFS_NODEVICE",
-      message: "no such device in pool"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Pool.Offline",
+        code: "EZFS_NODEVICE",
+        message: "no such device in pool"
+      })
+    )
     assert.strictEqual(error._tag, "NoSuchDevice")
   })
 
   it("maps EZFS_NOENT to DatasetNotFound when the operation declares it", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Dataset.Get",
-      code: "EZFS_NOENT",
-      message: "no such dataset"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Dataset.Get",
+        code: "EZFS_NOENT",
+        message: "no such dataset"
+      })
+    )
     assert.strictEqual(error._tag, "DatasetNotFound")
     assert.ok(error instanceof DatasetNotFound)
   })
@@ -91,63 +123,77 @@ describe("native errno mapping", () => {
   it("maps numeric libzfs_errno through errorValueToCode", () => {
     const noent = Object.entries(errorValueToCode).find(([, code]) => code === "EZFS_NOENT")
     assert.ok(noent)
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Dataset.Get",
-      errno: Number(noent[0]),
-      message: "missing"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Dataset.Get",
+        errno: Number(noent[0]),
+        message: "missing"
+      })
+    )
     assert.strictEqual(error._tag, "DatasetNotFound")
   })
 
   it("does not promote a code the operation did not declare", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Dataset.List",
-      code: "EZFS_EXISTS",
-      message: "already exists"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Dataset.List",
+        code: "EZFS_EXISTS",
+        message: "already exists"
+      })
+    )
     assert.strictEqual(error._tag, "UnknownZfsError")
   })
 
   it("maps EZFS_CHECKPOINT_EXISTS for Pool.Checkpoint and not for Pool.List", () => {
-    const mapped = classifyNativeError(new NativeFailure({
-      operation: "Pool.Checkpoint",
-      code: "EZFS_CHECKPOINT_EXISTS",
-      message: "checkpoint exists"
-    }))
+    const mapped = classifyNativeError(
+      new NativeFailure({
+        operation: "Pool.Checkpoint",
+        code: "EZFS_CHECKPOINT_EXISTS",
+        message: "checkpoint exists"
+      })
+    )
     assert.strictEqual(mapped._tag, "CheckpointExists")
-    const undeclared = classifyNativeError(new NativeFailure({
-      operation: "Pool.List",
-      code: "EZFS_CHECKPOINT_EXISTS",
-      message: "checkpoint exists"
-    }))
+    const undeclared = classifyNativeError(
+      new NativeFailure({
+        operation: "Pool.List",
+        code: "EZFS_CHECKPOINT_EXISTS",
+        message: "checkpoint exists"
+      })
+    )
     assert.strictEqual(undeclared._tag, "UnknownZfsError")
   })
 
   it("maps EZFS_CRYPTOFAILED to EncryptionFailure for Crypto.LoadKey", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Crypto.LoadKey",
-      code: "EZFS_CRYPTOFAILED",
-      message: "incorrect key"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Crypto.LoadKey",
+        code: "EZFS_CRYPTOFAILED",
+        message: "incorrect key"
+      })
+    )
     assert.strictEqual(error._tag, "EncryptionFailure")
   })
 
   it("maps EZFS_MOUNTFAILED to MountFailed for Mount.Mount", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Mount.Mount",
-      code: "EZFS_MOUNTFAILED",
-      message: "failed to mount dataset"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Mount.Mount",
+        code: "EZFS_MOUNTFAILED",
+        message: "failed to mount dataset"
+      })
+    )
     assert.strictEqual(error._tag, "MountFailed")
     assert.ok(error instanceof MountFailed)
   })
 
   it("maps EZFS_REFTAG_HOLD to HoldTagExists for Snapshot.Hold", () => {
-    const error = classifyNativeError(new NativeFailure({
-      operation: "Snapshot.Hold",
-      code: "EZFS_REFTAG_HOLD",
-      message: "tag already exists on this dataset"
-    }))
+    const error = classifyNativeError(
+      new NativeFailure({
+        operation: "Snapshot.Hold",
+        code: "EZFS_REFTAG_HOLD",
+        message: "tag already exists on this dataset"
+      })
+    )
     assert.strictEqual(error._tag, "HoldTagExists")
     assert.ok(error instanceof HoldTagExists)
   })
@@ -163,14 +209,16 @@ describe("native errno mapping", () => {
       assert.ok(error instanceof DatasetAlreadyExists)
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings({
-        createPool: () => Effect.fail(new NativeFailure({
-          operation: "Pool.Create",
-          code: "EZFS_EXISTS",
-          message: "pool exists"
-        }))
+        createPool: () =>
+          Effect.fail(
+            new NativeFailure({
+              operation: "Pool.Create",
+              code: "EZFS_EXISTS",
+              message: "pool exists"
+            })
+          )
       })))))
-    )
-  )
+    ))
 
   it.effect("layerFrom maps zpool_destroy EZFS_NOENT through Pool.Destroy", () =>
     Effect.gen(function*() {
@@ -181,8 +229,7 @@ describe("native errno mapping", () => {
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings({
         destroyPool: () => missing("Pool.Destroy")
       })))))
-    )
-  )
+    ))
 
   it.effect("layerFrom exposes DatasetNotFound through Datasets.get", () =>
     Effect.gen(function*() {
@@ -191,8 +238,7 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "DatasetNotFound")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings()))))
-    )
-  )
+    ))
 
   it.effect("layerFrom classifies rollback errno", () =>
     Effect.gen(function*() {
@@ -203,8 +249,7 @@ describe("native errno mapping", () => {
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings({
         rollback: () => missing("Snapshot.Rollback")
       })))))
-    )
-  )
+    ))
 
   it.effect("layerFrom classifies native mount errno", () =>
     Effect.gen(function*() {
@@ -213,14 +258,16 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "MountFailed")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings({
-        mount: () => Effect.fail(new NativeFailure({
-          operation: "Mount.Mount",
-          code: "EZFS_MOUNTFAILED",
-          message: "native mount not bound"
-        }))
+        mount: () =>
+          Effect.fail(
+            new NativeFailure({
+              operation: "Mount.Mount",
+              code: "EZFS_MOUNTFAILED",
+              message: "native mount not bound"
+            })
+          )
       })))))
-    )
-  )
+    ))
 
   it.effect("layerFrom classifies native Pool.Clear errno", () =>
     Effect.gen(function*() {
@@ -229,8 +276,7 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "DatasetNotFound")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings()))))
-    )
-  )
+    ))
 
   it.effect("layerFrom classifies send stream errno", () =>
     Effect.gen(function*() {
@@ -242,8 +288,7 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "DatasetNotFound")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings()))))
-    )
-  )
+    ))
 
   it.effect("layerFrom classifies sendSpace errno", () =>
     Effect.gen(function*() {
@@ -252,8 +297,7 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "DatasetNotFound")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings()))))
-    )
-  )
+    ))
 
   it.effect("layerFrom exposes DatasetNotFound through Bookmarks.get", () =>
     Effect.gen(function*() {
@@ -265,8 +309,7 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "DatasetNotFound")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(bindings()))))
-    )
-  )
+    ))
 
   it.effect("unboundBindings fails NativeFailure instead of silently succeeding", () =>
     Effect.gen(function*() {
@@ -275,6 +318,5 @@ describe("native errno mapping", () => {
       assert.strictEqual(error._tag, "UnknownZfsError")
     }).pipe(
       Effect.provide(layer.pipe(Layer.provide(layerFrom(unboundBindings()))))
-    )
-  )
+    ))
 })

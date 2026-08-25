@@ -13,6 +13,8 @@ if ! limactl list -q 2>/dev/null | grep -qx "$instance"; then
   echo "Lima instance $instance is not running. Create it with:" >&2
   if [[ "$instance" == "effect-zfs-2.3" ]]; then
     echo "  limactl start --yes $root/scripts/lima/effect-zfs-2.3.yaml" >&2
+  elif [[ "$instance" == "effect-zfs-2.4" ]]; then
+    echo "  limactl start --yes $root/scripts/lima/effect-zfs-2.4.yaml" >&2
   else
     echo "  limactl start --yes --name=effect-zfs --cpus=4 --memory=4 --disk=20 --containerd=none --vm-type=vz template://ubuntu-24.04" >&2
   fi

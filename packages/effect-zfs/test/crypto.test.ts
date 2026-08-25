@@ -2,18 +2,18 @@ import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Redacted, Schema } from "effect"
 import {
   ChangeKey,
+  keyLocation,
   LoadKey,
   UnloadKey,
   WrappingKey,
-  keyLocation,
   wrappingKey,
   wrappingKeyToCliBytes,
   wrappingKeyToNativeBytes
-} from "../src/Args.js"
-import { Crypto } from "../src/Crypto.js"
+} from "../src/args/index.js"
 import { EncryptionFailure } from "../src/generated/errors.generated.js"
-import { datasetName } from "../src/Name.js"
-import * as Test from "../src/Test.js"
+import * as Test from "../src/protocol/test.js"
+import { datasetName } from "../src/schema/name.js"
+import { Crypto } from "../src/services/crypto.js"
 
 const secret = "effect-zfs-passphrase-1"
 
@@ -75,8 +75,7 @@ describe("Crypto service", () => {
       }).pipe(Effect.flip)
       assert.strictEqual(error._tag, "EncryptionFailure")
       assert.ok(error instanceof EncryptionFailure)
-    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer()))))
-  )
+    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer())))))
 
   it.effect("rejects a short passphrase without putting it on argv", () =>
     Effect.gen(function*() {
@@ -89,8 +88,7 @@ describe("Crypto service", () => {
       }).pipe(Effect.flip)
       assert.strictEqual(error._tag, "EncryptionFailure")
       assert.isFalse(JSON.stringify(error).includes("tinykey"))
-    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer()))))
-  )
+    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer())))))
 
   it.effect("loadKey and changeKey go through typed protocol handlers", () =>
     Effect.gen(function*() {
@@ -104,8 +102,7 @@ describe("Crypto service", () => {
         wrappingKey: wrappingKey("effect-zfs-passphrase-2")
       })
       yield* crypto.unloadKey({ name: datasetName("tank/enc") })
-    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer()))))
-  )
+    }).pipe(Effect.provide(Crypto.layer.pipe(Layer.provide(Test.layer())))))
 
   it.effect("encrypted create records wrappingKey as Redacted on protocol args", () => {
     let seen: string | undefined

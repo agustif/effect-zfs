@@ -1,8 +1,14 @@
 import { assert, describe, it } from "@effect/vitest"
-import { parseStatusOutput } from "../../src/internal/status.js"
-import { vdevConfig } from "../../src/Schemas.js"
-import { poolName } from "../../src/Name.js"
-import { featuresFor, linux, parseVersionOutput, parseZfsVersionLine, supportsJsonStatus } from "../../src/Version.js"
+import { parseStatusOutput } from "../../src/cli/status.js"
+import { vdevConfig } from "../../src/schema/models.js"
+import { poolName } from "../../src/schema/name.js"
+import {
+  featuresFor,
+  linux,
+  parseVersionOutput,
+  parseZfsVersionLine,
+  supportsJsonStatus
+} from "../../src/schema/version.js"
 
 const name = poolName("effectzfs_test_demo")
 

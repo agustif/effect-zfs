@@ -19,7 +19,7 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 
 ## What v0 actually covers
 
-91 operations in `spec/operations.json`. Every id has `ZfsProtocol` + `Cli.protocolLayer` + `NativeBindings`/`layerFrom` + `Schema.Class` args. Domain services yield `ZfsProtocol` only (Pool.program `argv` is Lua extras, not CLI). Native `unboundBindings` fail `NativeFailure`; Linux `linuxBindings` binds a `libzfs_core` subset via koffi.
+105 operations in `spec/operations.json`. Every id has `ZfsProtocol` + `Cli.protocolLayer` + `NativeBindings`/`layerFrom` + `Schema.Class` args. Domain services yield `ZfsProtocol` only (Pool.program `argv` is Lua extras, not CLI). Native `unboundBindings` fail `NativeFailure`; Linux `linuxBindings` binds `libzfs_core` + libnvpair + libzfs (including extra topology/status/allow/import).
 
 | Id | Service | Native | Notes |
 | --- | --- | --- | --- |
@@ -40,14 +40,20 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 | Pool.Create / Destroy | `Pools.*` | libzfs `zpool_create`/`destroy` | `Vdev` AST |
 | Pool.Add / Remove / Attach / Detach / Replace / Split / Online / Offline | `Pools.*` | `zpool_vdev_*` | Branded `VdevId`/`DevicePath` |
 | Pool.Import / Export / Reguid / Upgrade / LabelClear / Checkpoint | `Pools.*` | libzfs + `lzc_pool_checkpoint` | |
-| Pool.Trim / Initialize / Clear / Reopen / Sync | `Pools.*` | lzc + `zpool_clear` | 2.2.2 flags; trim no `-a` |
-| Pool.Scrub / Resilver | `Pools.*` | `lzc_scrub` / `zpool_scan` | |
+| Pool.Trim / Initialize / Clear / Reopen / Sync | `Pools.*` | lzc + `zpool_clear` | 2.2.2 flags; 2.4 `all` (`-a`) typed |
+| Pool.Scrub / Resilver | `Pools.*` | `lzc_scrub` / `zpool_scan` | 2.4 `all` / `startAfter` / `endBefore` (`-a`/`-S`/`-E`) |
 | Pool.Events / EventsClear / EventsSeek / Iostat / Wait / History / Prefetch | `Pools.*` | libzfs + `lzc_wait` / `lzc_pool_prefetch` | Streams stay streams |
 | Pool.Program / GetBootenv / SetBootenv / DdtPrune / Condense | `Pools.*` | lzc | Channel-program Lua `argv` |
 | Replication.Send / SendSpace / SendProgress / SnaprangeSpace | `Replication.*` | `lzc_send*` / `lzc_snaprange_space` | Incremental, resume, redact, saved, space, progress, snap range |
 | Replication.Receive / AbortReceive | `Replication.*` | `lzc_receive*` | `-d`/`-e`, `-o`/`-x`, heal, resumable, `-A` |
 | Crypto.LoadKey / UnloadKey / ChangeKey | `Crypto.*` | `lzc_*_key` | `Redacted` wrapping key; never on argv |
 | Mount.Mount / Unmount / Share / Unshare | `Mount.*` | libzfs | Not lzc |
+| Dataset.Rewrite | `Datasets.rewrite` | `ZFS_IOC_REWRITE` | 2.3+ files; 2.4 `-P`/`-C` |
+| Pool.Freeze / Remap / ErrorLog | `Pools.freeze` / `remap` / `errorLog` | `ZFS_IOC_POOL_FREEZE` / `REMAP` / `zpool_get_errlog` | Freeze unfreezes via export/import. Remap is a kernel no-op. |
+| Pool.InjectFault / ClearFault / ListFaults | `Pools.injectFault` / `clearFault` / `listFaults` | `ZFS_IOC_INJECT_*` | Packed `zinject_record_t`. CLI is `zinject` (often zfs-test, not zfsutils-linux). |
+| Pool.SetVdevPath / SetVdevFru | `Pools.setVdevPath` / `setVdevFru` | `ZFS_IOC_VDEV_SETPATH` / `SETFRU` | Native ioctl. CLI is `zpool set path=` / `zpool set fru=`. |
+| Dataset.ObjToPath / DsobjToName / NextObj / ObjToStats | `Datasets.*` | `zpool_obj_to_path*` / `ZFS_IOC_NEXT_OBJ` / `OBJ_TO_STATS` | Native. Linux zfs CLI has no subcommand; CLI fails `UnknownZfsError`. |
+| Mount.SmbAcl | `Mount.smbAcl` | `ZFS_IOC_SMB_ACL` | Illumos-leaning; Linux kernel may return ENOTTY. |
 | Zfs.Version | `Pools.version` | userland/kernel | Protocol op, not only `Version.ts` parse |
 
 ---
@@ -60,11 +66,11 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 | `create` filesystem | **done** | `lzc_create` | `-n`/`-P`/`-u`/`-v`; wrapping key optional |
 | `create -V` volume | **done** | `lzc_create` | `-b` `VolBlockSize`, `-n`/`-P`/`-u`/`-v`; size branded |
 | `destroy` dataset | **done** | `lzc_destroy` | `-n`/`-p`/`-R`/`-v`/`-r`/`-f` |
-| `destroy` snapshot | **done** | `lzc_destroy_snaps` | `@from%to` range; comma lists still CLI-only extra names |
+| `destroy` snapshot | **done** | `lzc_destroy_snaps` / `zfs_destroy_snaps` | `@from%to` range; comma lists still CLI-only extra names |
 | `destroy` bookmark | **done** | `lzc_destroy_bookmarks` | |
-| `snapshot` | **done** | `lzc_snapshot` | Multi-snap, `-o`, recursive |
-| `rollback` | **done** | `lzc_rollback` / `lzc_rollback_to` | `-r`/`-R`/`-f` |
-| `clone` | **done** | `lzc_clone` | `-p` parents |
+| `snapshot` | **done** | `lzc_snapshot` / libzfs `zfs_snapshot` (`-r`) | Multi-snap, `-o`, recursive |
+| `rollback` | **done** | `lzc_rollback_to` / libzfs `zfs_rollback` | `-r`/`-R`/`-f` |
+| `clone` | **done** | `lzc_clone` + `zfs_create_ancestors` | `-p` parents |
 | `promote` | **done** | `lzc_promote` | |
 | `rename` | **done** | `lzc_rename` | `-p`/`-u`/`-r`/`-f` |
 | `bookmark` | **done** | `lzc_bookmark` | |
@@ -79,7 +85,7 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 | `mount` / `unmount` | **done** | **libzfs** | Not lzc |
 | `share` / `unshare` | **done** | **libzfs** | NFS/SMB |
 | `send` | **done** | `lzc_send*` | Incremental, resume, replicate exclude, redact, saved, progress, space estimate |
-| `receive` | **done** | `lzc_receive*` | `-d`/`-e`/`-A` abort, `-o`/`-x` props, heal, resumable |
+| `receive` | **done** | `lzc_receive*` + `DRR_BEGIN` `drr_toname` | `-d`/`-e`/`-A` abort, `-o`/`-x` props, heal, resumable |
 | `allow` / `unallow` | **done** | **libzfs** ACL | Delegated admin |
 | `hold` / `holds` / `release` | **done** | `lzc_hold` / `lzc_get_holds` / `lzc_release` | |
 | `diff` | **done** | `ZFS_IOC_DIFF` | |
@@ -87,6 +93,7 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 | `redact` | **done** | `lzc_redact` | |
 | `wait` | **done** | `lzc_wait_fs` | |
 | `zone` / `unzone` | **done** | Linux userns ioctls | Linux-only |
+| `rewrite` | **done** | `ZFS_IOC_REWRITE` | 2.3+ file paths; 2.4 `-P`/`-C` typed |
 
 ---
 
@@ -103,16 +110,16 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 | `checkpoint` | **done** | `lzc_pool_checkpoint` | discard flag |
 | `list` | **done** | **libzfs** | Extra `-o` columns; interval is `iostat` |
 | `iostat` | **done** | **libzfs** | Streaming samples |
-| `status` | **done** | **libzfs** | Typed `PoolHealth` + vdev tree; 2.3 JSON live skipped until 2.3 guest |
+| `status` | **done** | **libzfs** | Typed `PoolHealth` + vdev tree; 2.3 JSON live on Lima `effect-zfs-2.3` |
 | `online` / `offline` | **done** | **libzfs** | |
 | `clear` | **done** | **libzfs** | `zpool_clear`; rewind `-nF` typed |
 | `reopen` | **done** | `lzc_reopen` | `-n` / `noRestart` |
 | `attach` / `detach` / `replace` | **done** | **libzfs** | |
 | `split` | **done** | **libzfs** | |
-| `initialize` | **done** | `lzc_initialize` | 2.2.2 `-c/-s/-u/-w`; no `-z`/`-a` |
+| `initialize` | **done** | `zpool_initialize` / `lzc_initialize` | 2.2.2 `-c/-s/-u/-w`; 2.4 `-a` typed; native path names via leaf GUIDs |
 | `resilver` | **done** | **libzfs** scan | optional wait |
-| `scrub` | **done** | `lzc_scrub` | pause/stop/wait |
-| `trim` | **done** | `lzc_trim` | 2.2.2 `-d/-w/-r/-c/-s`; no `-a` |
+| `scrub` | **done** | `lzc_scrub` | pause/stop/wait; 2.4 `-a`/`-S`/`-E` typed |
+| `trim` | **done** | `zpool_trim` / `lzc_trim` | 2.2.2 `-d/-w/-r/-c/-s`; 2.4 `-a` typed; native path names via leaf GUIDs |
 | `import` / `export` | **done** | **libzfs** | |
 | `upgrade` | **done** | **libzfs** | Pool version/features |
 | `reguid` | **done** | **libzfs** | |
@@ -130,11 +137,11 @@ Command lists are from Lima Ubuntu 24.04 **zfs-2.2.2**. Ioctl enum from vendor O
 
 ## Kernel `ZFS_IOC_*` (vendor header)
 
-Covered: `CREATE`, `DESTROY`, `DESTROY_SNAPS`, `SNAPSHOT`, `CLONE`, `SET_PROP`, `INHERIT_PROP`, `POOL_GET/SET_PROPS`, `SEND`/`RECV`/`SEND_NEW`/`SEND_SPACE`/`SEND_PROGRESS`/`RECV_NEW`, `ROLLBACK`, `RENAME`, `PROMOTE`, `HOLD`/`RELEASE`/`GET_HOLDS`, `BOOKMARK`/`GET_BOOKMARKS`/`DESTROY_BOOKMARKS`/`GET_BOOKMARK_PROPS`, `POOL_CREATE`/`DESTROY`/`IMPORT`/`EXPORT`, `VDEV_ADD`/`REMOVE`/`ATTACH`/`DETACH`/`SPLIT`/`SET_STATE`, `POOL_SCAN`/`SCRUB`, `CLEAR`, `SHARE`, `USERSPACE_*`, `DIFF`, `POOL_REGUID`/`REOPEN`/`SYNC`/`UPGRADE`/`GET_HISTORY`, `CHANNEL_PROGRAM`, `LOAD_KEY`/`UNLOAD_KEY`/`CHANGE_KEY`, `POOL_CHECKPOINT`, `POOL_INITIALIZE`/`TRIM`, `REDACT`, `WAIT`/`WAIT_FS`, `POOL_PREFETCH`, `DDT_PRUNE`, `POOL_CONDENSE`, Linux `EVENTS_*`, `USERNS_ATTACH/DETACH`, `SET/GET_BOOTENV`.
+Covered: `CREATE`, `DESTROY`, `DESTROY_SNAPS`, `SNAPSHOT`, `CLONE`, `SET_PROP`, `INHERIT_PROP`, `POOL_GET/SET_PROPS`, `SEND`/`RECV`/`SEND_NEW`/`SEND_SPACE`/`SEND_PROGRESS`/`RECV_NEW`, `ROLLBACK`, `RENAME`, `PROMOTE`, `HOLD`/`RELEASE`/`GET_HOLDS`, `BOOKMARK`/`GET_BOOKMARKS`/`DESTROY_BOOKMARKS`/`GET_BOOKMARK_PROPS`, `POOL_CREATE`/`DESTROY`/`IMPORT`/`EXPORT`, `VDEV_ADD`/`REMOVE`/`ATTACH`/`DETACH`/`SPLIT`/`SET_STATE`, `POOL_SCAN`/`SCRUB`, `CLEAR`, `SHARE`, `USERSPACE_*`, `DIFF`, `POOL_REGUID`/`REOPEN`/`SYNC`/`UPGRADE`/`GET_HISTORY`, `CHANNEL_PROGRAM`, `LOAD_KEY`/`UNLOAD_KEY`/`CHANGE_KEY`, `POOL_CHECKPOINT`, `POOL_INITIALIZE`/`TRIM`, `REDACT`, `WAIT`/`WAIT_FS`, `POOL_PREFETCH`, `DDT_PRUNE`, `POOL_CONDENSE`, Linux `EVENTS_*`, `USERNS_ATTACH/DETACH`, `SET/GET_BOOTENV`, `ZFS_IOC_REWRITE`, `POOL_FREEZE`, `INJECT_FAULT` / `CLEAR_FAULT` / `INJECT_LIST_NEXT`, `ERROR_LOG`, `VDEV_SETPATH` / `VDEV_SETFRU`, `DSOBJ_TO_DSNAME` / `OBJ_TO_PATH` / `OBJ_TO_STATS` / `NEXT_OBJ`, `SMB_ACL`, `REMAP`.
 
-**Still unmapped** (skip or later): `POOL_CONFIGS`, `POOL_STATS`, `POOL_TRYIMPORT`, `POOL_FREEZE`, `INJECT_*` (debug), `ERROR_LOG`, `SMB_ACL`, `DSOBJ_TO_DSNAME`, `OBJ_TO_PATH`, `NEXT_OBJ`, `TMP_SNAPSHOT`, `OBJ_TO_STATS`, `SPACE_WRITTEN`, `SPACE_SNAPS`, `LOG_HISTORY`, `REMAP`, `VDEV_SETPATH`/`SETFRU`, `OBJSET_STATS`/`ZPLPROPS`/`RECVD_PROPS`, `DATASET_LIST_NEXT`/`SNAPSHOT_LIST_NEXT` (iter via libzfs, not public ioctl ops). `VDEV_GET/SET_PROPS` is mapped as `Pool.GetVdev` / `SetVdev`.
+Ioctls already reached through a higher-level op (not missing features): `POOL_CONFIGS` / `POOL_STATS` (`Pool.List` / `Get`), `POOL_TRYIMPORT` (`Pool.Import`), `OBJSET_STATS` / `ZPLPROPS` / `RECVD_PROPS` (`Dataset.Get`), `DATASET_LIST_NEXT` / `SNAPSHOT_LIST_NEXT` (`Dataset.List` / `Snapshot.List`), `LOG_HISTORY` (written on mutate; read by `Pool.History`), `SPACE_SNAPS` (`Replication.SnaprangeSpace`), `SPACE_WRITTEN` (`Dataset.Get` `written` / `written@snap`), `TMP_SNAPSHOT` (used inside `Dataset.Diff`), `VDEV_GET/SET_PROPS` (`Pool.GetVdev` / `SetVdev`).
 
-Debug inject/clear/list-next: **out of scope** for the public library.
+`ZFS_IOC_REWRITE` is not in Ubuntu 2.2.2/2.3.1 (`zfs rewrite` appears in 2.4); live tests run on all three and expect failure before 2.4, success on 2.4. Native `Pool.Status` walks `vdev_tree` children via per-element `koffi.decode` (do not decode whole nvlist arrays).
 
 ---
 
@@ -147,7 +154,7 @@ Debug inject/clear/list-next: **out of scope** for the public library.
 | `lzc_snapshot` | **done** (multi + `-o` on CLI; native one nvlist) |
 | `lzc_clone` | **done** (`-p` is CLI/libzfs) |
 | `lzc_send` / `lzc_receive` | **done** (+ resume/space/progress/heal/cmdprops) |
-| `lzc_get_props` | get via CLI/libzfs |
+| `lzc_get_props` | **done** (pool props; dataset get is libzfs) |
 | `lzc_exists` | **done** (`Dataset.Exists`) |
 | `lzc_promote` | **done** |
 | `lzc_destroy_snaps` | destroy one snap |
@@ -181,8 +188,8 @@ Still **libzfs-only** (no lzc): pool create/import/export/add/attach, dataset li
 | --- | --- |
 | `CreateDatasetProperties` / `WritableDatasetProperties` | TS mapped types, not a single Schema.Class (still per-property codecs) |
 | `PropertyWireValue` | raw string; codec-per-property already on `defineProperty.schema` |
-| Pool status `raw` | wire document / text leftover |
-| Native create/snapshot/send | still need nvlist `.node` for full lzc; koffi subset is exists/destroy/rename/promote/checkpoint/reopen/rollback_to/unload_key |
+| Pool status `raw` | optional original JSON/text; `config` is the vdev tree |
+| Native protocol | Linux `linuxBindings` binds lzc + libzfs extra; unbound only off Linux or if `.so` missing. `trim\|initialize\|scrub -a` refused (non-test pools) |
 
 ---
 
@@ -193,10 +200,10 @@ Still **libzfs-only** (no lzc): pool create/import/export/add/attach, dataset li
 | Host Vitest | argv, protocol, native errno, classify, limits, send/receive/crypto/bookmark/holds/vdev/quota/allow |
 | Live 2.2.2 | gated to process-created `effectzfs_test_*`; skipped on Darwin |
 | Live 2.3 JSON status | Lima `effect-zfs-2.3` Ubuntu 25.04 / zfs-2.3.1 (`npm run test:live:2.3`) |
-| Live 2.4 | none |
+| Live 2.4 | Lima `effect-zfs-2.4` Ubuntu 26.04 / zfs-2.4.x (`npm run test:live:2.4`) |
 | Encryption / key stdin | live 2.2.2 test present |
 | `PermissionDenied` | live `su nobody zfs list` |
-| Native vs CLI diff | unbound + Linux koffi subset; no full libzfs `.node` |
+| Native vs CLI diff | Lima live `test/live/native.test.ts` for koffi lzc + libzfs extra (status, version, allow, destroy range, rollback `-r`, import/export) |
 
 ---
 
@@ -207,10 +214,10 @@ Do not add Alchemy reconciliation. Expand `ZfsProtocol` + `Args` + `spec/operati
 1. **Replication complete** — **done** (incremental send/receive, resume, send space).
 2. **Crypto** — **done** (load/unload/change-key with `Redacted`).
 3. **Snapshot lifecycle** — **done** (rollback, promote, rename, holds, snapshot list, bookmark CRUD).
-4. **Pool topology** — **done** (`Vdev` AST, create/destroy/import/export, attach/replace/add/remove). Vdev **props** still missing.
+4. **Pool topology** — **done** (`Vdev` AST, create/destroy/import/export, attach/replace/add/remove, `Pool.GetVdev` / `SetVdev`).
 5. **Mount/share** — **done**.
 6. **Pool health** — **done** (scrub, resilver, trim, initialize, clear, online/offline, wait, events, iostat).
 7. **Deleg / quota / project / channel program / redact / checkpoint / bootenv** — **done**.
-8. **Native `.node`** on the same `Args`; differential tests vs CLI — **missing**.
+8. **Native Linux koffi** (`Native.linuxLayer()`) on the same `Args`; differential tests vs CLI — **done** (`test/live/native.test.ts`).
 
 Each new op: patch `spec/operations.json` → `npm run generate` → `Args` Schema.Class → protocol method → CLI adapter → service → versioned tests (fixture + live 2.2.2, extra live file if 2.3-only).

@@ -8,7 +8,13 @@
     "available": {"codec":"bytes"},
     "mountpoint": {"codec":"string"},
     "encryption": {"codec":"enum"},
-    "keyformat": {"codec":"enum"}
+    "keyformat": {"codec":"enum"},
+    "prefetch": {"since":"2.2.4"},
+    "direct": {"since":"2.3.0"},
+    "longname": {"since":"2.3.0"},
+    "defaultuserquota": {"since":"2.4.0"},
+    "defaultgroupquota": {"since":"2.4.0"},
+    "defaultprojectquota": {"since":"2.4.0"}
   },
   "pool": {
     "ashift": {"codec":"integer"},

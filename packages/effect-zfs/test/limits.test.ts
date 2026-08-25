@@ -1,5 +1,11 @@
 import { assert, describe, it } from "@effect/vitest"
-import { EncodedProperty, decodePropertyAssignment, devicePath, encodePropertyAssignment, propertyName } from "../src/Args.js"
+import {
+  decodePropertyAssignment,
+  devicePath,
+  EncodedProperty,
+  encodePropertyAssignment,
+  propertyName
+} from "../src/args/index.js"
 import {
   datasetVersion,
   mib,
@@ -13,8 +19,18 @@ import {
   volBlockSize,
   volumeSize,
   zplVersionMax
-} from "../src/Limits.js"
-import { bookmarkComponent, bookmarkName, datasetName, datasetOfBookmark, holdTag, poolName, snapshotComponent, snapshotName, snapshotRange } from "../src/Name.js"
+} from "../src/schema/limits.js"
+import {
+  bookmarkComponent,
+  bookmarkName,
+  datasetName,
+  datasetOfBookmark,
+  holdTag,
+  poolName,
+  snapshotComponent,
+  snapshotName,
+  snapshotRange
+} from "../src/schema/name.js"
 
 describe("typed OpenZFS limits", () => {
   it("accepts legal pool, dataset, and snapshot names", () => {
@@ -32,6 +48,14 @@ describe("typed OpenZFS limits", () => {
     assert.throws(() => datasetName("tank@snap"))
     assert.throws(() => datasetName("/tank"))
     assert.throws(() => snapshotComponent("has/slash"))
+  })
+
+  it("matches OpenZFS entity_namecheck for . and .. components", () => {
+    assert.throws(() => datasetName("tank/."))
+    assert.throws(() => datasetName("tank/.."))
+    assert.throws(() => snapshotName(datasetName("tank/fs"), snapshotComponent(".")))
+    assert.throws(() => snapshotName(datasetName("tank/fs"), snapshotComponent("..")))
+    assert.strictEqual(datasetName("tank/.hidden"), "tank/.hidden")
   })
 
   it("accepts hold tags and rejects reserved leading-dot tags", () => {
@@ -83,10 +107,12 @@ describe("typed OpenZFS limits", () => {
   })
 
   it("round-trips encoded property assignments through the CLI codec", () => {
-    const encoded = encodePropertyAssignment(new EncodedProperty({
-      name: propertyName("compression"),
-      value: "lz4"
-    }))
+    const encoded = encodePropertyAssignment(
+      new EncodedProperty({
+        name: propertyName("compression"),
+        value: "lz4"
+      })
+    )
     assert.strictEqual(encoded, "compression=lz4")
     const decoded = decodePropertyAssignment(encoded)
     assert.strictEqual(decoded.name, "compression")

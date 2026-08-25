@@ -1,5 +1,5 @@
-import type { DatasetPropertyName } from "../src/Args.js"
-import type { CreateDatasetProperties, WritableDatasetProperties } from "../src/Dataset.js"
+import type { DatasetPropertyName } from "../src/args/index.js"
+import type { CreateDatasetProperties, WritableDatasetProperties } from "../src/services/datasets.js"
 
 const knownProperty: DatasetPropertyName = "compression"
 void knownProperty

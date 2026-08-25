@@ -3,11 +3,12 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
-import { extractProperties, extractVdevProperties } from "../src/extract-properties.mjs"
 import { parseTargets, unquote } from "../src/c-parser.mjs"
+import { emitErrors, emitOperations, emitProperties, emitReleases } from "../src/emit-effect.mjs"
 import { extractErrors } from "../src/extract-errors.mjs"
+import { extractProperties, extractVdevProperties } from "../src/extract-properties.mjs"
+import { applyJsonPatch } from "../src/json-patch.mjs"
 import { buildSmithy } from "../src/smithy.mjs"
-import { emitErrors, emitProperties } from "../src/emit-effect.mjs"
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, "../../..")
@@ -24,10 +25,12 @@ test("extracts typed property metadata from OpenZFS-style tables", async () => {
   assert.equal(props.find((p) => p.name === "recordsize").codec, "bytes")
 })
 
-
 test("expands OpenZFS dataset masks and keeps hidden properties out of the public API", () => {
   assert.deepEqual(parseTargets("ZFS_TYPE_DATASET | ZFS_TYPE_BOOKMARK"), [
-    "filesystem", "volume", "snapshot", "bookmark"
+    "filesystem",
+    "volume",
+    "snapshot",
+    "bookmark"
   ])
 
   const source = `
@@ -124,7 +127,9 @@ test("emits Smithy custom traits and strongly typed Effect property surface", as
   const patches = JSON.parse(await fs.readFile(path.join(root, "patches/properties.json"), "utf8"))
   const properties = extractProperties(source, "dataset", patches.dataset)
   const model = buildSmithy({ properties, errors: [], operations: [], source: "fixture" })
-  const compression = Object.values(model.shapes).find((s) => s.traits?.["effect.zfs#zfsProperty"]?.name === "compression")
+  const compression = Object.values(model.shapes).find((s) =>
+    s.traits?.["effect.zfs#zfsProperty"]?.name === "compression"
+  )
   assert.equal(compression.type, "enum")
   const code = emitProperties(model)
   assert.match(code, /compression: defineProperty<"compression", "on" \| "off" \| "lz4"/)
@@ -132,9 +137,9 @@ test("emits Smithy custom traits and strongly typed Effect property surface", as
 })
 
 test("joins adjacent C string literals", () => {
-  assert.equal(unquote('"foo" "bar"'), "foobar")
+  assert.equal(unquote("\"foo\" \"bar\""), "foobar")
   assert.equal(
-    unquote('"on | off | lzjb | gzip | gzip-[1-9] | zle | lz4 | "\n    "zstd | zstd-[1-19]"'),
+    unquote("\"on | off | lzjb | gzip | gzip-[1-9] | zle | lz4 | \"\n    \"zstd | zstd-[1-19]\""),
     "on | off | lzjb | gzip | gzip-[1-9] | zle | lz4 | zstd | zstd-[1-19]"
   )
 })
@@ -173,9 +178,15 @@ test("extracts impl, onetime-default, metaslab-class macros, and skips vdev/macr
 })
 
 test("checked-in generated files are reproducible", async () => {
-  const before = await Promise.all([
-    "properties.generated.ts", "errors.generated.ts", "operations.generated.ts"
-  ].map((f) => fs.readFile(path.join(root, "packages/effect-zfs/src/generated", f), "utf8")))
+  const files = [
+    "properties.generated.ts",
+    "errors.generated.ts",
+    "operations.generated.ts",
+    "releases.generated.ts"
+  ]
+  const before = await Promise.all(
+    files.map((f) => fs.readFile(path.join(root, "packages/effect-zfs/src/generated", f), "utf8"))
+  )
   const { spawn } = await import("node:child_process")
   await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [path.join(root, "packages/codegen/src/generate-all.mjs")], {
@@ -183,8 +194,70 @@ test("checked-in generated files are reproducible", async () => {
     })
     child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`generator exited ${code}`)))
   })
-  const after = await Promise.all([
-    "properties.generated.ts", "errors.generated.ts", "operations.generated.ts"
-  ].map((f) => fs.readFile(path.join(root, "packages/effect-zfs/src/generated", f), "utf8")))
+  const after = await Promise.all(
+    files.map((f) => fs.readFile(path.join(root, "packages/effect-zfs/src/generated", f), "utf8"))
+  )
   assert.deepEqual(after, before)
+})
+
+test("RFC 6902 patches apply to the Smithy model", () => {
+  const model = buildSmithy({ properties: [], errors: [], operations: [], source: "fixture" })
+  const patched = applyJsonPatch(model, [
+    { op: "add", path: "/metadata/patchLayer", value: "rfc6902" }
+  ])
+  assert.equal(patched.metadata.patchLayer, "rfc6902")
+  assert.equal(model.metadata.patchLayer, undefined)
+  const replaced = applyJsonPatch({ a: { b: 1 } }, [{ op: "replace", path: "/a/b", value: 2 }])
+  assert.equal(replaced.a.b, 2)
+  const removed = applyJsonPatch({ a: { b: 1, c: 2 } }, [{ op: "remove", path: "/a/b" }])
+  assert.equal(removed.a.b, undefined)
+  const copied = applyJsonPatch({ a: 1 }, [{ op: "copy", path: "/b", from: "/a" }])
+  assert.equal(copied.b, 1)
+})
+
+test("operations carry input/output/since in the Smithy model and generated shapes", () => {
+  const model = buildSmithy({
+    properties: [],
+    errors: [],
+    operations: [{ id: "Dataset.CreateFilesystem", errors: [] }],
+    operationIo: { "Dataset.CreateFilesystem": { input: "CreateFilesystem", output: "void" } },
+    source: "fixture"
+  })
+  const shape = model.shapes["effect.zfs#Dataset_CreateFilesystem"]
+  assert.equal(shape.input.target, "effect.zfs#CreateFilesystem")
+  assert.equal(shape.traits["effect.zfs#zfsOperation"].since, "2.2.2")
+  const code = emitOperations(model)
+  assert.match(code, /export const OperationShapes/)
+  assert.match(code, /"Dataset.CreateFilesystem"/)
+  assert.match(code, /"input": "CreateFilesystem"/)
+  assert.match(code, /export type OperationInput/)
+  assert.match(code, /export type OperationOutput/)
+})
+
+test("Smithy native catalog is emitted onto operations", () => {
+  const model = buildSmithy({
+    properties: [],
+    errors: [],
+    operations: [{ id: "Dataset.CreateFilesystem", errors: [] }],
+    operationIo: { "Dataset.CreateFilesystem": { input: "CreateFilesystem", output: "void" } },
+    native: { "Dataset.CreateFilesystem": { kind: "lzc", symbol: "lzc_create", nvlist: true } },
+    source: "fixture"
+  })
+  const meta = model.shapes["effect.zfs#Dataset_CreateFilesystem"].traits["effect.zfs#zfsOperation"]
+  assert.equal(meta.native.symbol, "lzc_create")
+  const code = emitOperations(model)
+  assert.match(code, /export const OperationNative/)
+  assert.match(code, /"lzc_create"/)
+})
+
+test("emits a typed catalog for every Linux OpenZFS 2.2.2–2.4.4 minor", async () => {
+  const catalog = JSON.parse(await fs.readFile(path.join(root, "spec/releases.json"), "utf8"))
+  assert.equal(catalog.releases.length, 25)
+  const code = emitReleases(catalog)
+  assert.match(code, /v2_2_2:/)
+  assert.match(code, /v2_2_11:/)
+  assert.match(code, /v2_3_9:/)
+  assert.match(code, /v2_4_4:/)
+  assert.match(code, /"tag": "zfs-2.3.1"/)
+  assert.match(code, /"datasetPrefetchProp": true/)
 })

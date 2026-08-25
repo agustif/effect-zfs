@@ -2,17 +2,14 @@ import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Stream } from "effect"
 import {
   EventsCleared,
+  eventsSeekEnd,
+  eventsSeekStart,
   HistoryRecord,
   IostatRow,
   IostatSample,
   PoolEvent,
-  WaitResult,
-  eventsSeekEnd,
-  eventsSeekStart
-} from "../src/Args.js"
-import { Pools } from "../src/Pool.js"
-import { poolName } from "../src/Name.js"
-import { byteCount } from "../src/Limits.js"
+  WaitResult
+} from "../src/args/index.js"
 import {
   eventsFromLines,
   historyFromLines,
@@ -23,9 +20,12 @@ import {
   parseHistoryRecord,
   parseIostatRow,
   parseIostatTimestamp
-} from "../src/internal/observe.js"
-import * as Test from "../src/Test.js"
+} from "../src/cli/observe.js"
 import { layer } from "../src/index.js"
+import * as Test from "../src/protocol/test.js"
+import { byteCount } from "../src/schema/limits.js"
+import { poolName } from "../src/schema/name.js"
+import { Pools } from "../src/services/pools.js"
 
 describe("pool observe parsers", () => {
   it("parses scripted iostat rows with bigint counters", () => {
@@ -90,8 +90,7 @@ describe("pool observe parsers", () => {
       assert.ok(collected[0] instanceof PoolEvent)
       assert.strictEqual(collected[0]?.payload["pool"], "tank")
       assert.strictEqual(collected[1]?.eventClass, "ereport.fs.zfs.config")
-    })
-  )
+    }))
 
   it.effect("groups iostat samples on timestamp lines", () =>
     Effect.gen(function*() {
@@ -106,8 +105,7 @@ describe("pool observe parsers", () => {
       assert.strictEqual(samples[0]?.rows[0]?.allocated, 1n)
       assert.strictEqual(samples[1]?.timestamp, 200n)
       assert.strictEqual(samples[1]?.rows[0]?.allocated, 3n)
-    })
-  )
+    }))
 
   it.effect("streams history records", () =>
     Effect.gen(function*() {
@@ -117,8 +115,7 @@ describe("pool observe parsers", () => {
       )).pipe(Stream.runCollect)
       assert.strictEqual(rows.length, 1)
       assert.strictEqual(rows[0]?.command, "zpool create tank /tmp/a")
-    })
-  )
+    }))
 })
 
 describe("pool observe protocol", () => {
@@ -142,28 +139,39 @@ describe("pool observe protocol", () => {
       assert.strictEqual(eventsSeekStart, 0n)
     }).pipe(Effect.provide(layer.pipe(Layer.provide(Test.layer({
       waitPool: () => new WaitResult({ waited: false }),
-      history: () => Stream.make(new HistoryRecord({
-        time: "2024-01-01.00:00:00",
-        command: "zpool create tank",
-        internal: false
-      })),
-      iostat: () => Stream.make(new IostatSample({
-        rows: [new IostatRow({
-          name: "tank",
-          allocated: byteCount(1n),
-          free: byteCount(2n),
-          readOps: byteCount(0n),
-          writeOps: byteCount(0n),
-          readBytes: byteCount(0n),
-          writeBytes: byteCount(0n)
-        })]
-      })),
-      events: () => Stream.make(new PoolEvent({
-        time: "Jun 30 1993 21:49:08.000000001",
-        eventClass: "ereport.fs.zfs.pool_create",
-        pool: name,
-        payload: { pool: "tank" }
-      })),
+      history: () =>
+        Stream.make(
+          new HistoryRecord({
+            time: "2024-01-01.00:00:00",
+            command: "zpool create tank",
+            internal: false
+          })
+        ),
+      iostat: () =>
+        Stream.make(
+          new IostatSample({
+            rows: [
+              new IostatRow({
+                name: "tank",
+                allocated: byteCount(1n),
+                free: byteCount(2n),
+                readOps: byteCount(0n),
+                writeOps: byteCount(0n),
+                readBytes: byteCount(0n),
+                writeBytes: byteCount(0n)
+              })
+            ]
+          })
+        ),
+      events: () =>
+        Stream.make(
+          new PoolEvent({
+            time: "Jun 30 1993 21:49:08.000000001",
+            eventClass: "ereport.fs.zfs.pool_create",
+            pool: name,
+            payload: { pool: "tank" }
+          })
+        ),
       prefetch: () => undefined,
       eventsSeek: () => undefined,
       eventsClear: () => new EventsCleared({ dropped: 0 })

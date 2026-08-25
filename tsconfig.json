@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/@effect/language-service/schema.json",
+  "files": [],
+  "references": [
+    { "path": "./packages/effect-zfs" }
+  ],
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
+  }
+}

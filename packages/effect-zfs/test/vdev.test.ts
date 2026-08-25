@@ -1,20 +1,12 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Sink, Stream } from "effect"
 import { ChildProcessSpawner } from "effect/unstable/process"
-import * as ZfsCli from "../src/Cli.js"
-import {
-  Disk,
-  Mirror,
-  Spare,
-  devicePath,
-  encodeVdev,
-  encodeVdevs,
-  vdevId
-} from "../src/Args.js"
-import { Pools } from "../src/Pool.js"
-import { poolName } from "../src/Name.js"
-import * as Test from "../src/Test.js"
+import { devicePath, Disk, encodeVdev, encodeVdevs, Mirror, Spare, vdevId } from "../src/args/index.js"
+import * as ZfsCli from "../src/cli/index.js"
 import { layer } from "../src/index.js"
+import * as Test from "../src/protocol/test.js"
+import { poolName } from "../src/schema/name.js"
+import { Pools } from "../src/services/pools.js"
 
 const bytes = (text: string) => new TextEncoder().encode(text)
 
@@ -108,8 +100,7 @@ describe("pool vdev mutate protocol", () => {
           assert.strictEqual(input.newPool, "tank2")
         }
       }))))
-    )
-  )
+    ))
 
   it.effect("builds zpool add/offline argv without domain services spawning", () => {
     const captured: Array<{ readonly command: string; readonly args: ReadonlyArray<string> }> = []

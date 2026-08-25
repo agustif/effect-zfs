@@ -1,63 +1,52 @@
 # effect-zfs
 
-Effect v4 library for Linux ZFS. Property tables, libzfs error codes, and
-operation unions are generated from OpenZFS source plus semantic patches. The
-runtime talks to `zfs` / `zpool` through a replaceable `ZfsProtocol`.
+Effect v4 library for **Linux OpenZFS**. Typed services for datasets, pools,
+snapshots, bookmarks, send/receive, crypto, mount, delegations, and quotas.
+
+Compatibility floor: **OpenZFS 2.2.2** (Ubuntu 24.04 `zfsutils-linux`). Every
+minor from **2.2.2–2.4.4** is catalogued in `spec/releases.json`. This is not a
+macOS OpenZFS wrapper.
+
+**0.1.0** is the first tagged release. Effect 4 is still `4.0.0-rc.111`, so this
+is not 1.0.
 
 ```text
-OpenZFS source (zfs_prop.c / zpool_prop.c / libzfs.h)
-        + patches/properties.json, patches/errors.json
-                |
-                v
-        Smithy 2.0 model
-                |
-                v
-     generated Schema types / TaggedError / operation unions
-                |
-                v
-     Datasets, Pools, Snapshots, Replication   (Context.Service)
-                |
-            ZfsProtocol  (typed ops, not argv)
-           /     |      \
-       CLI     Native    Test
-      (v0)   layerFrom   (v0)
+OpenZFS C tables + patches
+        → Smithy model
+        → generated Schema / TaggedError / operation IO
+        → Datasets Pools Snapshots Bookmarks Replication
+           Crypto Mount Delegations Quotas
+                    ↓
+              ZfsProtocol  (typed ops, not argv)
+           /        |         \
+        CLI      Native       Test
+     adapter   linuxLayer   testLayer
 ```
 
-Compatibility floor is **Linux ZFS 2.2.2** (Ubuntu 24.04 LTS `zfsutils-linux`).
-This is not a macOS OpenZFS wrapper. `zpool status -j` exists from OpenZFS 2.3;
-the CLI adapter tries JSON then falls back to parsable text (`-p`) when the flag
-is rejected. `Pools.status` just calls `ZfsProtocol.poolStatus`.
-
-## Status
-
-v0 is typed and host-tested against Effect `4.0.0-rc.111`.
-
-| Gate | Result |
-| --- | --- |
-| Effect / platform / vitest | `4.0.0-rc.111` |
-| TypeScript | 5.9.3, `tsc --noEmit` clean |
-| Codegen | OpenZFS `84aa7e7e09f6a4ddad9ec40dbe9498d50184ed07` → dataset/pool/vdev properties, 103 libzfs codes, 91 operations |
-| Host tests | 9 codegen + 31 Vitest (11 live skipped on Darwin) |
-| Linux live | Lima Ubuntu 24.04 / zfs-2.2.2 (`npm run test:live`). Lima Ubuntu 25.04 / zfs-2.3.1 JSON status (`npm run test:live:2.3`) |
-
-Live mutation is allowed only on process-created pools named `effectzfs_test_*`.
+On Linux, **`Native.linuxLayer()`** is the production interpreter (libzfs /
+libzfs_core via optional koffi). CLI is the portable adapter. Ioctl-only ops
+have no Ubuntu subcommand and fail closed on CLI.
 
 ## Install
 
-Peer: `effect@>=4.0.0-rc.111 <5`. Node usage also needs `@effect/platform-node`
-at the same RC.
+Peer: `effect@>=4.0.0-rc.111 <5`. Node also needs `@effect/platform-node` at the
+same RC. Native bindings need optional `koffi` on Linux.
 
 ```sh
+git clone git@github.com:agustif/effect-zfs.git
+cd effect-zfs
 npm install
 npm run typecheck
+npm run lint
 npm test
 ```
 
+The package is TypeScript source (`exports` point at `src/*.ts`). Use the
+workspace TypeScript so `@effect/language-service` loads.
+
 ## Usage
 
-Domain behavior is on services. Yield the service, then call methods. Provide
-`layer` (all four services), `Cli.layer` (`ZfsProtocol`), and `NodeServices`
-once at the edge.
+Yield a service, call methods, provide `layer` plus an interpreter at the edge.
 
 ```ts
 import { Effect } from "effect"
@@ -69,7 +58,7 @@ import {
   Snapshots,
   layer
 } from "effect-zfs"
-import * as Cli from "effect-zfs/cli"
+import * as Native from "effect-zfs/native"
 
 const program = Effect.gen(function*() {
   const datasets = yield* Datasets
@@ -89,23 +78,24 @@ const program = Effect.gen(function*() {
   return compression
 }).pipe(
   Effect.provide(layer),
-  Effect.provide(Cli.layer),
+  Effect.provide(Native.linuxLayer()),
   Effect.provide(NodeServices.layer)
 )
 
 NodeRuntime.runMain(program)
 ```
 
-`Dataset`, `Pool`, and `Snapshot` are `Schema.Class` models. `Datasets`,
-`Pools`, `Snapshots`, and `Replication` are the services. Names are branded:
-`Name.datasetName("tank/data")`, `Name.poolName("tank")`.
+On a machine without libzfs, swap `Native.linuxLayer()` for `Cli.layer`:
 
-Byte and uint64 values are `bigint`, never JavaScript `number`. Booleans on
-the wire are `on` / `off`. Operation inputs are `Schema.Class` values in
-`Args` (`CreateVolume`, `Send`, `GetProperty`, …). Names follow
-`zfs_namecheck`; zvol/vdev sizes are branded (`Limits.volumeSize`,
-`Limits.vdevSize`) with OpenZFS floors (`SPA_MINBLOCKSIZE` 512,
-`SPA_MINDEVSIZE` 64 MiB).
+```ts
+import * as Cli from "effect-zfs/cli"
+
+Effect.provide(Cli.layer)
+```
+
+Names are branded (`Name.datasetName`, `Name.poolName`). Byte and uint64 values
+are `bigint`. Booleans on the wire are `on` / `off`. Invalid names fail as
+`InvalidName` at the service boundary.
 
 ```ts
 import { Limits, Name } from "effect-zfs"
@@ -119,8 +109,8 @@ const vol = yield* datasets.createVolume({
 
 ### Replication
 
-`send` is a `Stream` of stdout chunks. `receive` consumes that stream; upstream
-stream errors stay typed.
+`send` is a `Stream` of chunks. `receive` consumes that stream. Do not buffer a
+backup in memory.
 
 ```ts
 const datasets = yield* Datasets
@@ -141,27 +131,16 @@ yield* replication.receive({
 Handlers are typed operations, not argv.
 
 ```ts
-import { Name, layer } from "effect-zfs"
+import { Args, Name, layer } from "effect-zfs"
 import * as Test from "effect-zfs/test"
 
 const program = listEffect.pipe(
   Effect.provide(layer),
   Effect.provide(Test.layer({
-    listDatasets: () => [{ name: Name.datasetName("tank"), kind: "filesystem" }]
+    listDatasets: () => [
+      new Args.DatasetListItem({ name: Name.datasetName("tank"), kind: "filesystem" })
+    ]
   }))
-)
-```
-
-### Native (contract only)
-
-A future napi addon implements `NativeBindings` (`lzc_*` + libzfs list/props). Map errno, do not parse CLI:
-
-```ts
-import * as Native from "effect-zfs/native"
-
-const program = listEffect.pipe(
-  Effect.provide(layer),
-  Effect.provide(Native.layerFrom(bindings))
 )
 ```
 
@@ -170,52 +149,72 @@ const program = listEffect.pipe(
 Generated failures are `Schema.TaggedError` classes (`DatasetNotFound`,
 `DatasetAlreadyExists`, …). CLI stderr is classified conservatively: a phrase
 is promoted only when that tag is declared for the current operation. Anything
-else is `UnknownZfsError`. Transport/spawn failures are `ZfsTransportError`.
+else is `UnknownZfsError`. Spawn failures are `ZfsTransportError`. Native maps
+`libzfs_errno()` / EZFS_* through `classifyNativeError`.
 
 ```ts
-const error = yield* datasets.get(Name.datasetName("tank/missing"), DatasetProperty.compression).pipe(Effect.flip)
-// error._tag === "DatasetNotFound" | "UnknownZfsError" | ...
+const error = yield* datasets.get(
+  Name.datasetName("tank/missing"),
+  DatasetProperty.compression
+).pipe(Effect.flip)
 ```
 
-## Generate
+## What CLI cannot do
 
-```sh
-npm run generate
-# pin / refresh vendor/openzfs:
-bash scripts/fetch-openzfs.sh
-node packages/codegen/src/generate-all.mjs --openzfs ./vendor/openzfs
-```
+These have **no Linux `zfs`/`zpool` subcommand** (or no query API). Native
+implements the ioctl. Use `Native.linuxLayer()`:
 
-Do not hand-edit `packages/effect-zfs/src/generated/*`. Change
-`patches/properties.json`, `patches/errors.json`, or `spec/operations.json`
-and regenerate.
+- obj-to-path, dsobj-to-name, next-obj, obj-to-stats
+- `eventsSeek`
+- send-progress query (`lzc_send_progress` needs the send fd)
+
+Also: `zinject`, `zpool freeze`, and `zfs remap` are often missing from Ubuntu
+`zfsutils-linux`. `zpool trim|initialize|scrub -a` is typed and **refused**
+(would touch non-test pools).
 
 ## Test
 
 ```sh
 npm run typecheck
-npm test                 # codegen + Vitest (live tests skip unless Linux+ZFS)
-npm run test:live        # Lima Ubuntu 24.04 / zfs-2.2.2; see scripts/lima-live.sh
-npm run test:live:2.3    # Lima Ubuntu 25.04 / zfs-2.3.1 JSON status
-# limactl start --yes scripts/lima/effect-zfs-2.3.yaml
-bash scripts/smoke-zfs.sh
+npm test                 # codegen + Vitest (live skips unless Linux+ZFS)
+npm run test:live        # Lima Ubuntu 24.04 / zfs-2.2.2
+npm run test:live:2.3    # Lima Ubuntu 25.04 / zfs-2.3.1
+npm run test:live:2.4    # Lima Ubuntu 26.04 / zfs-2.4.x
 ```
 
-`npm run test:live` copies the tree to `~/.cache/effect-zfs-live` inside the
-VM and `npm ci`s **there**. The virtiofs mount of `$HOME` is read-only; the
-script never writes Darwin `node_modules`. Version suites live in
-`test/version/2.2.2.test.ts`, `test/version/2.3.test.ts`, `test/live/2.2.2.test.ts`,
-and `test/live/2.3.test.ts`.
+Live mutation is allowed only on process-created pools named `effectzfs_test_*`.
+`npm run test:live` copies the tree to `~/.cache/effect-zfs-live` in the VM and
+runs `npm ci` there (the virtiofs `$HOME` mount is read-only).
+
+## Generate
+
+Do not hand-edit `packages/effect-zfs/src/generated/*`. Change `patches/` or
+`spec/` and regenerate.
+
+```sh
+npm run generate
+bash scripts/fetch-openzfs.sh
+node packages/codegen/src/generate-all.mjs --openzfs ./vendor/openzfs
+```
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
+| `packages/effect-zfs/src/services/` | Nine `Context.Service` modules + `layer` |
+| `packages/effect-zfs/src/args/` | Operation `Schema.Class` inputs |
+| `packages/effect-zfs/src/cli/` | CLI adapter (argv lives here only) |
+| `packages/effect-zfs/src/native/` | koffi `libzfs_core` / `libzfs` |
+| `packages/effect-zfs/src/protocol/` | `ZfsProtocol`, process transport, test layer |
+| `packages/effect-zfs/src/generated/` | Properties, errors, operation IO, Linux minors |
 | `packages/codegen` | C extractors, Smithy, Effect emitter |
-| `packages/effect-zfs/src` | Schema models, services, CLI / native-contract / test layers |
-| `patches/` | semantic overrides on generated metadata |
-| `spec/operations.json` | operation → error-tag unions |
-| `examples/` | copy-paste programs |
-| `vendor/openzfs` | sparse OpenZFS checkout used for codegen |
+| `patches/` | Property/error overrides + RFC 6902 `smithy.json` |
+| `spec/` | Operations, IO, native catalog, releases |
+| `examples/` | Copy-paste programs |
 
-See `ARCHITECTURE.md` for invariants, `ZFS_MAP.md` for the full zfs/zpool gap map, and `TASKS.md` for remaining work.
+Invariants and the native contract: `ARCHITECTURE.md`. Remaining thinner spots:
+`GAPS.md`. Full zfs/zpool map: `ZFS_MAP.md`.
+
+## License
+
+MIT

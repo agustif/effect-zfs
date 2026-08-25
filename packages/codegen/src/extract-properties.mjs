@@ -163,7 +163,7 @@ export const extractVdevProperties = (source, patches = {}) => {
   return properties
 }
 
-export const extractPropertyFiles = async ({ datasetPath, poolPath, patchPath }) => {
+export const extractPropertyFiles = async ({ datasetPath, patchPath, poolPath }) => {
   const [datasetSource, poolSource, patchRaw] = await Promise.all([
     fs.readFile(datasetPath, "utf8"),
     fs.readFile(poolPath, "utf8"),

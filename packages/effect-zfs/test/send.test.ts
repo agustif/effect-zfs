@@ -2,21 +2,21 @@ import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Sink, Stream } from "effect"
 import { ChildProcessSpawner } from "effect/unstable/process"
 import {
+  resumeToken,
   Send,
   SendOptions,
   SendProgress,
   SendProgressReport,
-  SendSpaceEstimate,
-  resumeToken
-} from "../src/Args.js"
-import { sendArgv } from "../src/Cli.js"
-import * as ZfsCli from "../src/Cli.js"
-import { byteCount } from "../src/Limits.js"
-import { bookmarkName, datasetName, snapshotName } from "../src/Name.js"
-import { lzcSendCall, lzcSendFlagsOf, LzcSendFlagBit } from "../src/Native.js"
-import { Replication } from "../src/Replication.js"
-import * as Test from "../src/Test.js"
+  SendSpaceEstimate
+} from "../src/args/index.js"
+import { sendArgv } from "../src/cli/index.js"
+import * as ZfsCli from "../src/cli/index.js"
 import { layer } from "../src/index.js"
+import { lzcSendCall, LzcSendFlagBit, lzcSendFlagsOf } from "../src/native/index.js"
+import * as Test from "../src/protocol/test.js"
+import { byteCount } from "../src/schema/limits.js"
+import { bookmarkName, datasetName, snapshotName } from "../src/schema/name.js"
+import { Replication } from "../src/services/replication.js"
 
 const src = datasetName("tank/src")
 const snapA = snapshotName(src, "a")
@@ -29,20 +29,24 @@ const bytes = (text: string) => new TextEncoder().encode(text)
 describe("zfs send args", () => {
   it("builds incremental -i from a snapshot", () => {
     assert.deepStrictEqual(
-      sendArgv(new Send({
-        snapshot: snapB,
-        options: new SendOptions({ incremental: "from", from: snapA })
-      })),
+      sendArgv(
+        new Send({
+          snapshot: snapB,
+          options: new SendOptions({ incremental: "from", from: snapA })
+        })
+      ),
       ["send", "-i", snapA, snapB]
     )
   })
 
   it("builds intermediate -I from a bookmark", () => {
     assert.deepStrictEqual(
-      sendArgv(new Send({
-        snapshot: snapB,
-        options: new SendOptions({ incremental: "intermediate", from: book })
-      })),
+      sendArgv(
+        new Send({
+          snapshot: snapB,
+          options: new SendOptions({ incremental: "intermediate", from: book })
+        })
+      ),
       ["send", "-I", book, snapB]
     )
   })
@@ -50,19 +54,23 @@ describe("zfs send args", () => {
   it("builds resume -t without a snapshot operand", () => {
     const token = resumeToken("1-abc")
     assert.deepStrictEqual(
-      sendArgv(new Send({
-        options: new SendOptions({ resumeToken: token })
-      })),
+      sendArgv(
+        new Send({
+          options: new SendOptions({ resumeToken: token })
+        })
+      ),
       ["send", "-t", token]
     )
   })
 
   it("builds --saved with a dataset operand", () => {
     assert.deepStrictEqual(
-      sendArgv(new Send({
-        dataset: src,
-        options: new SendOptions({ saved: true })
-      })),
+      sendArgv(
+        new Send({
+          dataset: src,
+          options: new SendOptions({ saved: true })
+        })
+      ),
       ["send", "--saved", src]
     )
   })
@@ -70,28 +78,33 @@ describe("zfs send args", () => {
   it("builds replicate -R with -X exclude, redact, progress, and lzc flags", () => {
     const skip = datasetName("tank/src/skip")
     assert.deepStrictEqual(
-      sendArgv(new Send({
-        snapshot: snapB,
-        options: new SendOptions({
-          replicate: true,
-          exclude: [skip],
-          redact,
-          progress: true,
-          flags: ["large-block", "embed", "compress", "raw"]
+      sendArgv(
+        new Send({
+          snapshot: snapB,
+          options: new SendOptions({
+            replicate: true,
+            exclude: [skip],
+            redact,
+            progress: true,
+            flags: ["large-block", "embed", "compress", "raw"]
+          })
         })
-      })),
+      ),
       ["send", "-v", "-c", "-w", "-L", "-e", "-R", "-X", skip, "--redact", redact, snapB]
     )
   })
 
   it("maps lzc_send flags and resume/redact call selection", () => {
-    const flags = lzcSendFlagsOf(new SendOptions({
-      saved: true,
-      flags: ["large-block", "embed", "compress", "raw"]
-    }))
+    const flags = lzcSendFlagsOf(
+      new SendOptions({
+        saved: true,
+        flags: ["large-block", "embed", "compress", "raw"]
+      })
+    )
     assert.strictEqual(
       flags,
-      LzcSendFlagBit.embed | LzcSendFlagBit.largeBlock | LzcSendFlagBit.compress | LzcSendFlagBit.raw | LzcSendFlagBit.saved
+      LzcSendFlagBit.embed | LzcSendFlagBit.largeBlock | LzcSendFlagBit.compress | LzcSendFlagBit.raw |
+        LzcSendFlagBit.saved
     )
     assert.strictEqual(lzcSendCall(new Send({ snapshot: snapB })), "lzc_send")
     assert.strictEqual(
@@ -103,10 +116,12 @@ describe("zfs send args", () => {
       "lzc_send_redacted"
     )
     assert.strictEqual(
-      lzcSendCall(new Send({
-        snapshot: snapB,
-        options: new SendOptions({ resumeToken: resumeToken("1-x"), redact })
-      })),
+      lzcSendCall(
+        new Send({
+          snapshot: snapB,
+          options: new SendOptions({ resumeToken: resumeToken("1-x"), redact })
+        })
+      ),
       "lzc_send_resume_redacted"
     )
   })
@@ -122,8 +137,7 @@ describe("typed send space and progress", () => {
       Effect.provide(layer.pipe(Layer.provide(Test.layer({
         sendSpace: () => new SendSpaceEstimate({ bytes: byteCount(4096n) })
       }))))
-    )
-  )
+    ))
 
   it.effect("sendProgress returns bigint byte and block counts", () =>
     Effect.gen(function*() {
@@ -135,8 +149,7 @@ describe("typed send space and progress", () => {
       Effect.provide(layer.pipe(Layer.provide(Test.layer({
         sendProgress: () => new SendProgressReport({ bytes: byteCount(512n), blocks: byteCount(1n) })
       }))))
-    )
-  )
+    ))
 })
 
 const handle = (input: {
@@ -168,14 +181,17 @@ describe("cli send space", () => {
       Effect.provide(
         Replication.layer.pipe(
           Layer.provideMerge(ZfsCli.layer),
-          Layer.provide(Layer.succeed(ChildProcessSpawner.ChildProcessSpawner)(
-            ChildProcessSpawner.make(() => Effect.succeed(handle({
-              stdout: Stream.make(bytes("incremental\ttank/src@a\ttank/src@b\t4096\nsize\t4096\n")),
-              exitCode: 0
-            })))
-          ))
+          Layer.provide(
+            Layer.succeed(ChildProcessSpawner.ChildProcessSpawner)(
+              ChildProcessSpawner.make(() =>
+                Effect.succeed(handle({
+                  stdout: Stream.make(bytes("incremental\ttank/src@a\ttank/src@b\t4096\nsize\t4096\n")),
+                  exitCode: 0
+                }))
+              )
+            )
+          )
         )
       )
-    )
-  )
+    ))
 })

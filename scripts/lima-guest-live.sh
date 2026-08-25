@@ -30,13 +30,17 @@ cd "$dest"
 
 stamp=".live-deps-stamp"
 expected="$(sha256sum package-lock.json | awk '{print $1}') $(node -v) $(uname -m)"
+# Previous `sudo vitest` can leave root-owned Vite caches that block npm ci.
+sudo -n rm -rf node_modules/.vite node_modules/.cache 2>/dev/null || true
 if [[ ! -x node_modules/.bin/vitest || "$(cat "$stamp" 2>/dev/null || true)" != "$expected" ]]; then
   echo "installing Linux node_modules in $dest"
-  npm ci --no-audit --no-fund
+  sudo -n rm -rf node_modules 2>/dev/null || true
+  npm ci --no-audit --no-fund --include=optional
+  npm rebuild koffi --silent >/dev/null 2>&1 || true
   printf '%s\n' "$expected" > "$stamp"
 fi
 
 sudo -n env PATH="$path" bash scripts/check-zfs-host.sh
 sudo -n env PATH="$path" bash scripts/smoke-zfs.sh
-# Full Vitest so live.test.ts actually runs (it skipIfs on non-Linux).
+# Full Vitest so test/live/* actually runs (it skipIfs on non-Linux).
 sudo -n env PATH="$path" npx --no-install vitest run

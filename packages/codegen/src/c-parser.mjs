@@ -1,6 +1,7 @@
-export const stripComments = (source) => source
-  .replace(/\/\*[\s\S]*?\*\//g, "")
-  .replace(/\/\/.*$/gm, "")
+export const stripComments = (source) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "")
 
 export const splitArgs = (text) => {
   const out = []
@@ -16,10 +17,13 @@ export const splitArgs = (text) => {
       else if (ch === quote) quote = null
       continue
     }
-    if (ch === '"' || ch === "'") { quote = ch; continue }
-    if (ch === '(' || ch === '{' || ch === '[') depth++
-    else if (ch === ')' || ch === '}' || ch === ']') depth--
-    else if (ch === ',' && depth === 0) {
+    if (ch === "\"" || ch === "'") {
+      quote = ch
+      continue
+    }
+    if (ch === "(" || ch === "{" || ch === "[") depth++
+    else if (ch === ")" || ch === "}" || ch === "]") depth--
+    else if (ch === "," && depth === 0) {
       out.push(text.slice(start, i).trim())
       start = i + 1
     }
@@ -46,9 +50,9 @@ export const findCalls = (source, prefix = "zprop_register_") => {
         else if (ch === quote) quote = null
         continue
       }
-      if (ch === '"' || ch === "'") quote = ch
-      else if (ch === '(') depth++
-      else if (ch === ')') {
+      if (ch === "\"" || ch === "'") quote = ch
+      else if (ch === "(") depth++
+      else if (ch === ")") {
         depth--
         if (depth === 0) break
       }
@@ -79,7 +83,7 @@ export const unquote = (value) => {
   const s = value.trim()
   if (s === "NULL") return null
   // Join adjacent C string literals: "foo" "bar" -> "foobar".
-  if (s.includes('"')) {
+  if (s.includes("\"")) {
     const parts = []
     const re = /"((?:\\.|[^"\\])*)"/g
     let match
@@ -116,10 +120,11 @@ export const parseTargets = (expr) => {
   return [...out]
 }
 
-export const parseAccess = (expr) => ({
-  PROP_READONLY: "readonly",
-  PROP_INHERIT: "inheritable",
-  PROP_DEFAULT: "mutable",
-  PROP_ONETIME: "setOnce",
-  PROP_ONETIME_DEFAULT: "setOnce"
-})[expr.trim()] ?? "mutable"
+export const parseAccess = (expr) =>
+  ({
+    PROP_READONLY: "readonly",
+    PROP_INHERIT: "inheritable",
+    PROP_DEFAULT: "mutable",
+    PROP_ONETIME: "setOnce",
+    PROP_ONETIME_DEFAULT: "setOnce"
+  })[expr.trim()] ?? "mutable"

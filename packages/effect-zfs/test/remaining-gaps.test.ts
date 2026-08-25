@@ -1,62 +1,80 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Stream } from "effect"
-import * as ZfsCli from "../src/Cli.js"
-import { Datasets } from "../src/Dataset.js"
-import { Pools } from "../src/Pool.js"
-import { Replication } from "../src/Replication.js"
-import { Snapshots } from "../src/Snapshot.js"
+import { absolutePath, vdevId } from "../src/args/index.js"
+import * as ZfsCli from "../src/cli/index.js"
+import { parseTextVdevTree, vdevTreeFromUnknown } from "../src/cli/status.js"
 import { VdevProperty } from "../src/generated/properties.generated.js"
-import { datasetVersion, volBlockSize, volumeSize } from "../src/Limits.js"
-import { datasetName, snapshotName, snapshotRange } from "../src/Name.js"
-import { parseTextVdevTree, vdevTreeFromUnknown } from "../src/internal/status.js"
-import { CommandResult, ZfsProcess, type ZfsCommand } from "../src/Process.js"
 import { layer } from "../src/index.js"
-import { vdevId } from "../src/Args.js"
-import { poolName } from "../src/Name.js"
-import { Dataset, Snapshot } from "../src/Schemas.js"
+import { CommandResult, type ZfsCommand, ZfsProcess } from "../src/protocol/process.js"
+import { datasetVersion, volBlockSize, volumeSize } from "../src/schema/limits.js"
+import { Dataset, Snapshot } from "../src/schema/models.js"
+import { datasetName, poolName, snapshotName, snapshotRange } from "../src/schema/name.js"
+import { Datasets } from "../src/services/datasets.js"
+import { Pools } from "../src/services/pools.js"
+import { Replication } from "../src/services/replication.js"
+import { Snapshots } from "../src/services/snapshots.js"
 
-const recorded: ZfsCommand[] = []
+const recorded: Array<ZfsCommand> = []
 
 const fakeProcess = Layer.succeed(
   ZfsProcess,
   ZfsProcess.of({
     run: (command) => {
       recorded.push(command)
+      if (command.binary === "zfs" && command.args[0] === "version") {
+        return Effect.succeed(
+          new CommandResult({
+            command,
+            stdout: "zfs-2.4.1-1\nzfs-kmod-2.4.1-1\n",
+            stderr: "",
+            exitCode: 0
+          })
+        )
+      }
       if (command.binary === "zfs" && command.args[0] === "list" && command.args.includes("snapshot")) {
         return Effect.succeed(new CommandResult({ command, stdout: "tank/src@seed", stderr: "", exitCode: 0 }))
       }
-      if (command.binary === "zfs" && command.args[0] === "list" && command.args.some((arg) => arg.endsWith("/missing"))) {
-        return Effect.succeed(new CommandResult({
-          command,
-          stdout: "",
-          stderr: "cannot open 'tank/missing': dataset does not exist",
-          exitCode: 1
-        }))
+      if (
+        command.binary === "zfs" && command.args[0] === "list" && command.args.some((arg) => arg.endsWith("/missing"))
+      ) {
+        return Effect.succeed(
+          new CommandResult({
+            command,
+            stdout: "",
+            stderr: "cannot open 'tank/missing': dataset does not exist",
+            exitCode: 1
+          })
+        )
       }
       if (command.binary === "zfs" && command.args[0] === "list") {
-        return Effect.succeed(new CommandResult({ command, stdout: command.args[command.args.length - 1] ?? "", stderr: "", exitCode: 0 }))
+        return Effect.succeed(
+          new CommandResult({ command, stdout: command.args[command.args.length - 1] ?? "", stderr: "", exitCode: 0 })
+        )
       }
       if (command.binary === "zpool" && command.args[0] === "get") {
-        return Effect.succeed(new CommandResult({
-          command,
-          stdout: "/tmp/a.img\tcomment\thello\tlocal",
-          stderr: "",
-          exitCode: 0
-        }))
+        return Effect.succeed(
+          new CommandResult({
+            command,
+            stdout: "/tmp/a.img\tcomment\thello\tlocal",
+            stderr: "",
+            exitCode: 0
+          })
+        )
       }
       if (command.binary === "zfs" && command.args[0] === "send") {
-        return Effect.succeed(new CommandResult({
-          command,
-          stdout: "size\t4096\n",
-          stderr: "",
-          exitCode: 0
-        }))
+        return Effect.succeed(
+          new CommandResult({
+            command,
+            stdout: "size\t4096\n",
+            stderr: "",
+            exitCode: 0
+          })
+        )
       }
       return Effect.succeed(new CommandResult({ command, stdout: "", stderr: "", exitCode: 0 }))
     },
     stream: () => Stream.empty,
-    runWithInput: (command) =>
-      Effect.succeed(new CommandResult({ command, stdout: "", stderr: "", exitCode: 0 }))
+    runWithInput: (command) => Effect.succeed(new CommandResult({ command, stdout: "", stderr: "", exitCode: 0 }))
   })
 )
 
@@ -140,13 +158,43 @@ describe("remaining map holes", () => {
         snapshotName(datasetName("tank/src"), "b")
       )
       assert.strictEqual(space.bytes, 4096n)
+      yield* datasets.rewrite(["/tmp/effect-zfs-rewrite.bin"], { physical: true, recursive: true })
+      yield* datasets.rewrite([absolutePath("/tmp/effect-zfs-rewrite-branded.bin")])
+      yield* pools.freeze(poolName("tank"))
+      yield* pools.injectFault({ pool: poolName("tank"), kind: "io", device: "/tmp/a.img" })
+      yield* pools.injectFault({ pool: poolName("tank"), kind: "flush" })
+      yield* pools.setVdevPath(poolName("tank"), "/tmp/a.img", "/tmp/b.img")
+      yield* pools.setVdevFru(poolName("tank"), "/tmp/b.img", "fru0")
       const argv = recorded.map((cmd) => [cmd.binary, ...cmd.args])
       assert.deepStrictEqual(argv[0], ["zfs", "create", "-n", "-p", "-u", "-o", "mountpoint=none", "tank/fs"])
       assert.deepStrictEqual(argv[1], ["zfs", "create", "-s", "-b", "8192", "-V", "1048576", "tank/vol"])
-      assert.ok(argv.some((row) => row[0] === "zfs" && row[1] === "upgrade" && row.includes("-r") && row.includes("-V")))
-      assert.ok(argv.some((row) => row[0] === "zfs" && row[1] === "destroy" && row.includes("-R") && row.includes("-n")))
+      assert.ok(
+        argv.some((row) => row[0] === "zfs" && row[1] === "upgrade" && row.includes("-r") && row.includes("-V"))
+      )
+      assert.ok(
+        argv.some((row) => row[0] === "zfs" && row[1] === "destroy" && row.includes("-R") && row.includes("-n"))
+      )
       assert.ok(argv.some((row) => row[0] === "zfs" && row[1] === "clone" && row.includes("-p")))
+      assert.ok(
+        argv.some((row) =>
+          row[0] === "zfs" && row[1] === "rewrite" && row.includes("-P") && row.includes("-r") &&
+          row.includes("/tmp/effect-zfs-rewrite.bin")
+        )
+      )
+      assert.ok(
+        argv.some((row) =>
+          row[0] === "zfs" && row[1] === "rewrite" && row.includes("/tmp/effect-zfs-rewrite-branded.bin")
+        )
+      )
       assert.ok(argv.some((row) => row[0] === "zpool" && row[1] === "set" && row[2] === "comment=effect-zfs"))
-    }).pipe(Effect.provide(provided))
-  )
+      assert.ok(argv.some((row) => row[0] === "zpool" && row[1] === "freeze" && row.includes("tank")))
+      assert.ok(
+        argv.some((row) =>
+          row[0] === "zinject" && row.includes("-e") && row.includes("io") && row.includes("/tmp/a.img")
+        )
+      )
+      assert.ok(argv.some((row) => row[0] === "zinject" && row.includes("-a")))
+      assert.ok(argv.some((row) => row[0] === "zpool" && row[1] === "set" && row[2] === "path=/tmp/b.img"))
+      assert.ok(argv.some((row) => row[0] === "zpool" && row[1] === "set" && row[2] === "fru=fru0"))
+    }).pipe(Effect.provide(provided)))
 })

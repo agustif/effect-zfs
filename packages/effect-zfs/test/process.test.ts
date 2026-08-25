@@ -2,18 +2,17 @@ import { assert, describe, it } from "@effect/vitest"
 import { Data, Effect, Exit, Fiber, Layer, Sink, Stream } from "effect"
 import { systemError } from "effect/PlatformError"
 import { ChildProcessSpawner } from "effect/unstable/process"
-import * as ZfsCli from "../src/Cli.js"
-import { command } from "../src/Protocol.js"
-import { ZfsProcess } from "../src/Process.js"
-import { Crypto } from "../src/Crypto.js"
-import { wrappingKey } from "../src/Args.js"
-import { Mount } from "../src/Mount.js"
-import { Pools } from "../src/Pool.js"
-import { Replication } from "../src/Replication.js"
-import { Snapshots } from "../src/Snapshot.js"
-import { datasetName, poolName } from "../src/Name.js"
-import { snapshotName } from "../src/Name.js"
-import { byteCount } from "../src/Limits.js"
+import { wrappingKey } from "../src/args/index.js"
+import * as ZfsCli from "../src/cli/index.js"
+import { ZfsProcess } from "../src/protocol/process.js"
+import { command } from "../src/protocol/protocol.js"
+import { byteCount } from "../src/schema/limits.js"
+import { datasetName, poolName, snapshotName } from "../src/schema/name.js"
+import { Crypto } from "../src/services/crypto.js"
+import { Mount } from "../src/services/mount.js"
+import { Pools } from "../src/services/pools.js"
+import { Replication } from "../src/services/replication.js"
+import { Snapshots } from "../src/services/snapshots.js"
 
 class UpstreamBoom extends Data.TaggedError("UpstreamBoom")<{
   readonly message: string
@@ -81,13 +80,14 @@ describe("cli process streams", () => {
       const process = yield* ZfsProcess
       const error = yield* process.run(command("zfs", "list")).pipe(Effect.flip)
       assert.strictEqual(error._tag, "ZfsTransportError")
-    }).pipe(Effect.provide(cli(() => Effect.fail(systemError({
-      _tag: "Unknown",
-      module: "ChildProcess",
-      method: "spawn",
-      description: "execve failed"
-    })))))
-  )
+    }).pipe(Effect.provide(cli(() =>
+      Effect.fail(systemError({
+        _tag: "Unknown",
+        module: "ChildProcess",
+        method: "spawn",
+        description: "execve failed"
+      }))
+    ))))
 
   it.effect("fails the send stream after partial stdout when the child exits non-zero", () =>
     Effect.gen(function*() {
@@ -101,12 +101,13 @@ describe("cli process streams", () => {
       assert.deepStrictEqual(collected, ["PARTIAL"])
       assert.notStrictEqual(error._tag, "ZfsTransportError")
       assert.ok(error._tag === "UnknownZfsError" || error._tag === "DatasetNotFound")
-    }).pipe(Effect.provide(cli(() => Effect.succeed(handle({
-      stdout: Stream.make(bytes("PARTIAL")),
-      stderr: "cannot send 'tank/src@seed': dataset does not exist",
-      exitCode: 1
-    })))))
-  )
+    }).pipe(Effect.provide(cli(() =>
+      Effect.succeed(handle({
+        stdout: Stream.make(bytes("PARTIAL")),
+        stderr: "cannot send 'tank/src@seed': dataset does not exist",
+        exitCode: 1
+      }))
+    ))))
 
   it.effect("turns an early non-zero exit into a stream failure with no silent EOF", () =>
     Effect.gen(function*() {
@@ -116,12 +117,13 @@ describe("cli process streams", () => {
         Effect.flip
       )
       assert.ok(error._tag !== "ZfsTransportError")
-    }).pipe(Effect.provide(cli(() => Effect.succeed(handle({
-      stdout: Stream.empty,
-      stderr: "cannot send: dataset does not exist",
-      exitCode: 1
-    })))))
-  )
+    }).pipe(Effect.provide(cli(() =>
+      Effect.succeed(handle({
+        stdout: Stream.empty,
+        stderr: "cannot send: dataset does not exist",
+        exitCode: 1
+      }))
+    ))))
 
   it.effect("reaps the child through Scope when the consumer is interrupted", () => {
     let released = false
@@ -159,11 +161,12 @@ describe("cli process streams", () => {
       assert.strictEqual(rows[0]?.snapshot, "tank/src@seed")
       assert.strictEqual(rows[0]?.tag, "keep")
       assert.strictEqual(rows[0]?.timestamp, 1700000000n)
-    }).pipe(Effect.provide(cliSnapshots(() => Effect.succeed(handle({
-      stdout: Stream.make(bytes("tank/src@seed\tkeep\t1700000000\n")),
-      exitCode: 0
-    })))))
-  )
+    }).pipe(Effect.provide(cliSnapshots(() =>
+      Effect.succeed(handle({
+        stdout: Stream.make(bytes("tank/src@seed\tkeep\t1700000000\n")),
+        exitCode: 0
+      }))
+    ))))
 
   it.effect("maps typed trim args to zpool trim argv", () =>
     Effect.gen(function*() {
@@ -182,8 +185,7 @@ describe("cli process streams", () => {
         assert.deepStrictEqual(cmd.args, ["trim", "-d", "-w", "-r", "1048576", "-c", "tank", "/dev/sda"])
       }
       return Effect.succeed(handle({ exitCode: 0 }))
-    })))
-  )
+    }))))
 
   it.effect("maps typed initialize/clear/reopen/sync args to zpool argv", () => {
     const seen: Array<ReadonlyArray<string>> = []
@@ -237,8 +239,7 @@ describe("cli process streams", () => {
         stream: Stream.fail(new UpstreamBoom({ message: "producer failed" }))
       }).pipe(Effect.flip)
       assert.strictEqual(error._tag, "UpstreamBoom")
-    }).pipe(Effect.provide(cli(() => Effect.succeed(handle({ exitCode: 0 })))))
-  )
+    }).pipe(Effect.provide(cli(() => Effect.succeed(handle({ exitCode: 0 }))))))
 
   it.effect("pipes wrapping keys on stdin and never puts them on argv", () => {
     const secret = "effect-zfs-passphrase-1"
@@ -256,7 +257,47 @@ describe("cli process streams", () => {
       assert.strictEqual(joined, `${secret}\n`)
     }).pipe(Effect.provide(cliCrypto((cmd) => {
       if (cmd._tag === "StandardCommand") {
-        argv.push(cmd.command, ...cmd.args)
+        argv.push(cmd.command)
+        for (const arg of cmd.args) {
+          argv.push(arg)
+        }
+      }
+      return Effect.succeed(handle({
+        exitCode: 0,
+        stdin: Sink.forEach((chunk: Uint8Array) =>
+          Effect.sync(() => {
+            stdinChunks.push(chunk)
+          })
+        )
+      }))
+    })))
+  })
+
+  it.effect("keeps wrapping keys off zfs create and change-key argv", () => {
+    const secret = "effect-zfs-passphrase-1"
+    const argv: Array<string> = []
+    const stdinChunks: Array<Uint8Array> = []
+    return Effect.gen(function*() {
+      const crypto = yield* Crypto
+      yield* crypto.createFilesystem({
+        name: datasetName("tank/enc"),
+        keyformat: "passphrase",
+        wrappingKey: wrappingKey(secret),
+        properties: { mountpoint: "none" }
+      })
+      yield* crypto.changeKey({
+        name: datasetName("tank/enc"),
+        wrappingKey: wrappingKey(secret)
+      })
+      assert.isTrue(argv.includes("create") || argv.includes("change-key"))
+      assert.isFalse(argv.includes(secret))
+      assert.isTrue(stdinChunks.length >= 1)
+    }).pipe(Effect.provide(cliCrypto((cmd) => {
+      if (cmd._tag === "StandardCommand") {
+        argv.push(cmd.command)
+        for (const arg of cmd.args) {
+          argv.push(arg)
+        }
       }
       return Effect.succeed(handle({
         exitCode: 0,

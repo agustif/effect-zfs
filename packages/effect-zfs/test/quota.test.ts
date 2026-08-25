@@ -1,13 +1,13 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
-import { ProjectRow, UserspaceRow } from "../src/Args.js"
-import { byteCount, projectId } from "../src/Limits.js"
-import { datasetName } from "../src/Name.js"
-import { parseProjectStdout, projectArgv } from "../src/internal/project.js"
-import { parseUserspaceStdout, userspaceArgv } from "../src/internal/quota.js"
-import { Quotas } from "../src/Quota.js"
-import * as Test from "../src/Test.js"
+import { ProjectRow, UserspaceRow } from "../src/args/index.js"
+import { parseProjectStdout, projectArgv } from "../src/cli/project.js"
+import { parseUserspaceStdout, userspaceArgv } from "../src/cli/quota.js"
 import { layer } from "../src/index.js"
+import * as Test from "../src/protocol/test.js"
+import { byteCount, projectId } from "../src/schema/limits.js"
+import { datasetName } from "../src/schema/name.js"
+import { Quotas } from "../src/services/quotas.js"
 
 describe("userspace / project parsers", () => {
   it("parses -Hp userspace rows and maps quota 0 to none", () => {
@@ -69,8 +69,7 @@ describe("Quotas service", () => {
           })
         ]
       }))))
-    )
-  )
+    ))
 
   it.effect("returns project list rows", () =>
     Effect.gen(function*() {
@@ -88,6 +87,5 @@ describe("Quotas service", () => {
           })
         ]
       }))))
-    )
-  )
+    ))
 })

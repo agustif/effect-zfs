@@ -1,32 +1,35 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
-import { Datasets } from "../src/Dataset.js"
-import { Mount } from "../src/Mount.js"
-import { Pools } from "../src/Pool.js"
-import { Snapshots } from "../src/Snapshot.js"
-import { DatasetListItem, File, PoolListItem, SnapshotHold, SnapshotListItem, devicePath } from "../src/Args.js"
-import { byteCount, spaMinDevSize } from "../src/Limits.js"
-import { datasetName, holdTag, poolName, snapshotName } from "../src/Name.js"
+import { DatasetListItem, devicePath, File, PoolListItem, SnapshotHold, SnapshotListItem } from "../src/args/index.js"
 import { DatasetProperty } from "../src/generated/properties.generated.js"
-import { PropertyGetRow } from "../src/Schemas.js"
-import * as Test from "../src/Test.js"
 import { layer } from "../src/index.js"
+import * as Test from "../src/protocol/test.js"
+import { byteCount, spaMinDevSize } from "../src/schema/limits.js"
+import { PropertyGetRow } from "../src/schema/models.js"
+import { datasetName, holdTag, poolName, snapshotName } from "../src/schema/name.js"
+import { Datasets } from "../src/services/datasets.js"
+import { Mount } from "../src/services/mount.js"
+import { Pools } from "../src/services/pools.js"
+import { Snapshots } from "../src/services/snapshots.js"
 
 const provided = layer.pipe(
   Layer.provide(Test.layer({
     listDatasets: () => [new DatasetListItem({ name: datasetName("tank/data"), kind: "filesystem" })],
-    listPools: () => [new PoolListItem({
-      name: poolName("tank"),
-      size: byteCount(1024n),
-      free: byteCount(512n),
-      health: "ONLINE"
-    })],
-    getProperty: (input) => new PropertyGetRow({
-      name: input.name,
-      property: input.property,
-      value: input.property === "compression" ? "lz4" : "off",
-      source: "local"
-    }),
+    listPools: () => [
+      new PoolListItem({
+        name: poolName("tank"),
+        size: byteCount(1024n),
+        free: byteCount(512n),
+        health: "ONLINE"
+      })
+    ],
+    getProperty: (input) =>
+      new PropertyGetRow({
+        name: input.name,
+        property: input.property,
+        value: input.property === "compression" ? "lz4" : "off",
+        source: "local"
+      }),
     createFilesystem: () => undefined,
     createSnapshot: () => undefined
   }))
@@ -39,16 +42,14 @@ describe("typed protocol services", () => {
       const rows = yield* datasets.list()
       assert.strictEqual(rows[0]?.name, datasetName("tank/data"))
       assert.strictEqual(rows[0]?.kind, "filesystem")
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("gets a typed dataset property from protocol rows", () =>
     Effect.gen(function*() {
       const datasets = yield* Datasets
       const compression = yield* datasets.get(datasetName("tank/data"), DatasetProperty.compression)
       assert.strictEqual(compression.value, "lz4")
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("lists pools with bigint sizes", () =>
     Effect.gen(function*() {
@@ -56,8 +57,7 @@ describe("typed protocol services", () => {
       const rows = yield* pools.list()
       assert.strictEqual(rows[0]?.name, poolName("tank"))
       assert.strictEqual(rows[0]?.size, 1024n)
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("creates a snapshot through typed protocol ops", () =>
     Effect.gen(function*() {
@@ -66,11 +66,10 @@ describe("typed protocol services", () => {
       const fs = yield* datasets.createFilesystem({ name: datasetName("tank/src") })
       const snap = yield* snapshots.create(fs, "seed")
       assert.strictEqual(snap.name, "tank/src@seed")
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("lists, rolls back, promotes, and renames through typed protocol ops", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const snap = snapshotName(datasetName("tank/src"), "seed")
     const local = layer.pipe(
       Layer.provide(Test.layer({
@@ -82,7 +81,11 @@ describe("typed protocol services", () => {
           seen.push(`promote:${input.name}`)
         },
         rename: (input) => {
-          seen.push(`rename:${input.from}:${input.to}:${input.recursive === true ? "r" : ""}${input.parents === true ? "p" : ""}`)
+          seen.push(
+            `rename:${input.from}:${input.to}:${input.recursive === true ? "r" : ""}${
+              input.parents === true ? "p" : ""
+            }`
+          )
         }
       }))
     )
@@ -94,7 +97,9 @@ describe("typed protocol services", () => {
       yield* snapshots.rollback(snap, { destroyRecent: true })
       const clone = yield* snapshots.promote(datasetName("tank/clone"))
       assert.strictEqual(clone.name, "tank/clone")
-      const renamedSnap = yield* snapshots.rename(snap, snapshotName(datasetName("tank/src"), "today"), { recursive: true })
+      const renamedSnap = yield* snapshots.rename(snap, snapshotName(datasetName("tank/src"), "today"), {
+        recursive: true
+      })
       assert.strictEqual(renamedSnap.name, "tank/src@today")
       const renamedFs = yield* datasets.rename(datasetName("tank/src"), datasetName("tank/dst"), { parents: true })
       assert.strictEqual(renamedFs.name, "tank/dst")
@@ -108,7 +113,7 @@ describe("typed protocol services", () => {
   })
 
   it.effect("holds, lists, and releases a snapshot through typed protocol ops", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const snap = snapshotName(datasetName("tank/src"), "seed")
     const local = layer.pipe(
       Layer.provide(Test.layer({
@@ -145,7 +150,7 @@ describe("typed protocol services", () => {
   })
 
   it.effect("forwards pool trim/initialize/clear/reopen/sync through typed args", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const local = layer.pipe(
       Layer.provide(Test.layer({
         trimPool: (input) => {
@@ -187,11 +192,10 @@ describe("typed protocol services", () => {
       const pools = yield* Pools
       const error = yield* pools.trim(poolName("tank"), { devices: [""] }).pipe(Effect.flip)
       assert.strictEqual(error._tag, "InvalidName")
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("forwards pool scrub start/pause/stop/wait and resilver through typed args", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const local = layer.pipe(
       Layer.provide(Test.layer({
         scrub: (input) => {
@@ -220,7 +224,7 @@ describe("typed protocol services", () => {
   })
 
   it.effect("forwards mount/unmount/share/unshare through typed args", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const local = layer.pipe(
       Layer.provide(Test.layer({
         mount: (input) => {
@@ -266,11 +270,10 @@ describe("typed protocol services", () => {
       assert.strictEqual(created.name, "tank")
       assert.strictEqual(created.size, 1024n)
       yield* pools.destroy(created, { force: true })
-    }).pipe(Effect.provide(provided))
-  )
+    }).pipe(Effect.provide(provided)))
 
   it.effect("forwards pool import/export/reguid/upgrade/checkpoint/labelclear through typed args", () => {
-    const seen: string[] = []
+    const seen: Array<string> = []
     const local = layer.pipe(
       Layer.provide(Test.layer({
         importPool: (input) => {

@@ -1,15 +1,16 @@
-import { existsSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs"
-import { execFileSync } from "node:child_process"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import { NodeServices } from "@effect/platform-node"
 import { Context, Effect, Layer } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
-import * as ZfsCli from "../../src/Cli.js"
-import { mib, spaMinDevSize, vdevSize, type VdevSize } from "../../src/Limits.js"
-import { datasetName, poolName } from "../../src/Name.js"
-import { parseZfsVersionLine, type ZfsVersion } from "../../src/Version.js"
+import { execFileSync } from "node:child_process"
+import { existsSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import * as ZfsCli from "../../src/cli/index.js"
 import { layer as zfsLayer } from "../../src/index.js"
+import * as Native from "../../src/native/index.js"
+import { mib, spaMinDevSize, type VdevSize, vdevSize } from "../../src/schema/limits.js"
+import { datasetName, poolName } from "../../src/schema/name.js"
+import { parseZfsVersionLine, type ZfsVersion } from "../../src/schema/version.js"
 
 export const hasLiveLinuxZfs = process.platform === "linux" && (existsSync("/usr/sbin/zfs") || existsSync("/sbin/zfs"))
 
@@ -34,12 +35,16 @@ const runZpool = (args: ReadonlyArray<string>) =>
     return yield* spawner.exitCode(ChildProcess.make("zpool", [...args], { extendEnv: true }))
   })
 
+export const assertTestPoolName = (name: string): void => {
+  if (!name.startsWith("effectzfs_test_")) {
+    throw new Error("refusing non-test pool name")
+  }
+}
+
 export const fileBackedPool = (size: VdevSize) =>
   Effect.gen(function*() {
     const name = `effectzfs_test_${process.pid}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`
-    if (!name.startsWith("effectzfs_test_")) {
-      return yield* Effect.die("refusing non-test pool name")
-    }
+    assertTestPoolName(name)
     const listed = yield* runZpool(["list", "-H", "-o", "name", name])
     if (Number(listed) === 0) {
       return yield* Effect.die(`refusing to touch an existing pool: ${name}`)
@@ -53,7 +58,14 @@ export const fileBackedPool = (size: VdevSize) =>
     truncateSync(diskA, bytes)
     truncateSync(diskB, bytes)
     const created = yield* runZpool([
-      "create", "-f", "-O", "mountpoint=none", name, "mirror", diskA, diskB
+      "create",
+      "-f",
+      "-O",
+      "mountpoint=none",
+      name,
+      "mirror",
+      diskA,
+      diskB
     ])
     if (Number(created) !== 0) {
       rmSync(dir, { recursive: true, force: true })
@@ -84,4 +96,12 @@ const LiveZfs = zfsLayer.pipe(
   Layer.provideMerge(NodeServices.layer)
 )
 export const Live = TestPoolLayer.pipe(Layer.provideMerge(LiveZfs))
+
+export const NativeLive = TestPoolLayer.pipe(
+  Layer.provideMerge(zfsLayer),
+  Layer.provideMerge(Native.linuxLayer()),
+  Layer.provideMerge(NodeServices.layer)
+)
+
+export const hasLinuxLzc = hasLiveLinuxZfs && Native.loadLinuxLzc() !== undefined
 export { ChildProcess, ChildProcessSpawner }

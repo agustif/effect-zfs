@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest"
 import { DatasetProperty, PoolProperty } from "../src/generated/properties.generated.js"
-import { decodePropertyValue, encodePropertyValue } from "../src/Property.js"
-
+import { decodePropertyValue, encodePropertyValue } from "../src/schema/property.js"
 
 describe("property codecs", () => {
   it("keeps uint64 byte values above MAX_SAFE_INTEGER as bigint", () => {
@@ -37,4 +36,3 @@ describe("property codecs", () => {
     assert.notStrictEqual(DatasetProperty.used.codec, "integer")
   })
 })
-

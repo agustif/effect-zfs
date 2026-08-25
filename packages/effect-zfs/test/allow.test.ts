@@ -1,19 +1,13 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
-import {
-  AllowGrant,
-  AllowListing,
-  DelegWho,
-  delegPermission
-} from "../src/Args.js"
-import { delegPermSetName } from "../src/Name.js"
-import { Delegations } from "../src/Delegation.js"
-import { classifyCliError } from "../src/Error.js"
-import { inheritFlags, parseAllowStdout, whoArgv } from "../src/internal/allow.js"
-import { datasetName } from "../src/Name.js"
-import { command } from "../src/Protocol.js"
-import * as Test from "../src/Test.js"
+import { AllowGrant, AllowListing, delegPermission, DelegWho } from "../src/args/index.js"
+import { inheritFlags, parseAllowStdout, whoArgv } from "../src/cli/allow.js"
+import { classifyCliError } from "../src/errors/classify.js"
 import { layer } from "../src/index.js"
+import { command } from "../src/protocol/protocol.js"
+import * as Test from "../src/protocol/test.js"
+import { datasetName, delegPermSetName } from "../src/schema/name.js"
+import { Delegations } from "../src/services/delegations.js"
 
 const result = (stderr: string) => ({
   command: command("zfs", "allow"),
@@ -102,16 +96,17 @@ describe("Delegations service", () => {
             setpoint: datasetName("tank/data"),
             sets: [],
             create: [],
-            grants: [new AllowGrant({
-              who: new DelegWho({ kind: "user", name: "alice" }),
-              inherit: "local",
-              permissions: [delegPermission("snapshot")]
-            })]
+            grants: [
+              new AllowGrant({
+                who: new DelegWho({ kind: "user", name: "alice" }),
+                inherit: "local",
+                permissions: [delegPermission("snapshot")]
+              })
+            ]
           })
         ]
       }))))
-    )
-  )
+    ))
 
   it("accepts @set names via permset_namecheck", () => {
     assert.strictEqual(delegPermSetName("@eng"), "@eng")

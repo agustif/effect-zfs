@@ -1,16 +1,15 @@
-import { assert, describe, it, layer } from "@effect/vitest"
+import { assert, describe, layer } from "@effect/vitest"
 import { Effect } from "effect"
-import { Pools } from "../../src/Pool.js"
-import { vdevConfig } from "../../src/Schemas.js"
-import { atLeast, linux, parseVersionOutput, parseZfsVersionLine, supportsJsonStatus } from "../../src/Version.js"
+import { vdevConfig } from "../../src/schema/models.js"
 import {
-  ChildProcess,
-  ChildProcessSpawner,
-  Live,
-  TestPool,
-  detectUserspace,
-  hasLiveLinuxZfs
-} from "./harness.js"
+  atLeast,
+  linux,
+  parseVersionOutput,
+  parseZfsVersionLine,
+  supportsJsonStatus
+} from "../../src/schema/version.js"
+import { Pools } from "../../src/services/pools.js"
+import { ChildProcess, ChildProcessSpawner, detectUserspace, hasLiveLinuxZfs, Live, TestPool } from "./harness.js"
 
 const version = detectUserspace()
 const jsonStatus = version !== undefined && supportsJsonStatus(version)
@@ -26,8 +25,7 @@ describe.skipIf(!hasLiveLinuxZfs || !jsonStatus)("linux zfs live 2.3+", () => {
         const pools = yield* Pools
         const info = yield* pools.version()
         assert.isTrue(atLeast(info.userspace, linux.v2_3_0), info.userspace.raw)
-      })
-    )
+      }))
 
     it.effect("zpool status -j is accepted and prints a JSON object", () =>
       Effect.gen(function*() {
@@ -49,8 +47,7 @@ describe.skipIf(!hasLiveLinuxZfs || !jsonStatus)("linux zfs live 2.3+", () => {
         const row = document.pools?.[env.pool] ?? Object.values(document.pools ?? {})[0]
         assert.ok(row !== undefined)
         assert.ok(row.state === undefined || typeof row.state === "string")
-      })
-    )
+      }))
 
     it.effect("pool status uses JSON (raw is an object, not text)", () =>
       Effect.gen(function*() {
@@ -73,8 +70,7 @@ describe.skipIf(!hasLiveLinuxZfs || !jsonStatus)("linux zfs live 2.3+", () => {
           names.some((name) => name.endsWith(".img") || name.startsWith("/")),
           names.join(",")
         )
-      })
-    )
+      }))
 
     it.effect("JSON status scan is present as a typed object or omitted", () =>
       Effect.gen(function*() {
@@ -89,8 +85,7 @@ describe.skipIf(!hasLiveLinuxZfs || !jsonStatus)("linux zfs live 2.3+", () => {
               status.scan.summary !== undefined
           )
         }
-      })
-    )
+      }))
 
     it.effect("zfs version -j object form includes userland and kernel", () =>
       Effect.gen(function*() {
@@ -101,13 +96,14 @@ describe.skipIf(!hasLiveLinuxZfs || !jsonStatus)("linux zfs live 2.3+", () => {
         assert.ok(info.kernel !== undefined)
         assert.isTrue(atLeast(info.kernel, linux.v2_3_0), info.kernel.raw)
         assert.strictEqual(typeof JSON.parse(raw.trim()), "object")
-      })
-    )
+      }))
   })
 })
 
-const flattenNames = (nodes: ReadonlyArray<{ readonly name: string; readonly children?: ReadonlyArray<unknown> }>): string[] => {
-  const out: string[] = []
+const flattenNames = (
+  nodes: ReadonlyArray<{ readonly name: string; readonly children?: ReadonlyArray<unknown> }>
+): Array<string> => {
+  const out: Array<string> = []
   const walk = (list: ReadonlyArray<{ readonly name: string; readonly children?: ReadonlyArray<unknown> }>) => {
     for (const node of list) {
       out.push(node.name)

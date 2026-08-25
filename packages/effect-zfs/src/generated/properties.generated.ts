@@ -1,5 +1,6 @@
 // AUTO-GENERATED. DO NOT EDIT.
-import { defineProperty } from "../Property.js"
+import { Schema } from "effect"
+import { defineProperty } from "../schema/property.js"
 
 export const DatasetProperty = {
   redundantMetadata: defineProperty<"redundant_metadata", "all" | "most" | "some" | "none", "filesystem" | "volume", "inheritable">({
@@ -39,7 +40,7 @@ export const DatasetProperty = {
     name: "secondarycache", scope: "dataset", access: "inheritable", targets: ["filesystem","volume","snapshot"], codec: "enum", default: "ZFS_CACHE_ALL", values: ["none","metadata","all"]
   }),
   prefetch: defineProperty<"prefetch", "none" | "metadata" | "all", "filesystem" | "volume" | "snapshot", "inheritable">({
-    name: "prefetch", scope: "dataset", access: "inheritable", targets: ["filesystem","volume","snapshot"], codec: "enum", default: "ZFS_PREFETCH_ALL", values: ["none","metadata","all"]
+    name: "prefetch", scope: "dataset", access: "inheritable", targets: ["filesystem","volume","snapshot"], codec: "enum", default: "ZFS_PREFETCH_ALL", values: ["none","metadata","all"], since: "2.2.4"
   }),
   logbias: defineProperty<"logbias", "latency" | "throughput", "filesystem" | "volume", "inheritable">({
     name: "logbias", scope: "dataset", access: "inheritable", targets: ["filesystem","volume"], codec: "enum", default: "ZFS_LOGBIAS_LATENCY", values: ["latency","throughput"]
@@ -54,7 +55,7 @@ export const DatasetProperty = {
     name: "volmode", scope: "dataset", access: "inheritable", targets: ["filesystem","volume"], codec: "enum", default: "ZFS_VOLMODE_DEFAULT", values: ["default","full","geom","dev","none"]
   }),
   direct: defineProperty<"direct", "disabled" | "standard" | "always", "filesystem", "inheritable">({
-    name: "direct", scope: "dataset", access: "inheritable", targets: ["filesystem"], codec: "enum", default: "ZFS_DIRECT_STANDARD", values: ["disabled","standard","always"]
+    name: "direct", scope: "dataset", access: "inheritable", targets: ["filesystem"], codec: "enum", default: "ZFS_DIRECT_STANDARD", values: ["disabled","standard","always"], since: "2.3.0"
   }),
   atime: defineProperty<"atime", boolean, "filesystem", "inheritable">({
     name: "atime", scope: "dataset", access: "inheritable", targets: ["filesystem"], codec: "boolean", default: "1"
@@ -249,13 +250,13 @@ export const DatasetProperty = {
     name: "snapshot_limit", scope: "dataset", access: "mutable", targets: ["filesystem","volume"], codec: "bigint", default: "UINT64_MAX"
   }),
   defaultuserquota: defineProperty<"defaultuserquota", bigint | "none", "filesystem" | "snapshot", "mutable">({
-    name: "defaultuserquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0"
+    name: "defaultuserquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0", since: "2.4.0"
   }),
   defaultgroupquota: defineProperty<"defaultgroupquota", bigint | "none", "filesystem" | "snapshot", "mutable">({
-    name: "defaultgroupquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0"
+    name: "defaultgroupquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0", since: "2.4.0"
   }),
   defaultprojectquota: defineProperty<"defaultprojectquota", bigint | "none", "filesystem" | "snapshot", "mutable">({
-    name: "defaultprojectquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0"
+    name: "defaultprojectquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0", since: "2.4.0"
   }),
   defaultuserobjquota: defineProperty<"defaultuserobjquota", bigint | "none", "filesystem" | "snapshot", "mutable">({
     name: "defaultuserobjquota", scope: "dataset", access: "mutable", targets: ["filesystem","snapshot"], codec: "bytesOrNone", default: "0"
@@ -282,7 +283,7 @@ export const DatasetProperty = {
     name: "snapshots_changed_nsecs", scope: "dataset", access: "readonly", targets: ["filesystem","volume"], codec: "bigint", default: "0"
   }),
   longname: defineProperty<"longname", boolean, "filesystem", "inheritable">({
-    name: "longname", scope: "dataset", access: "inheritable", targets: ["filesystem"], codec: "boolean", default: "0"
+    name: "longname", scope: "dataset", access: "inheritable", targets: ["filesystem"], codec: "boolean", default: "0", since: "2.3.0"
   }),
 } as const
 
@@ -753,3 +754,241 @@ export const datasetPropertyNames = ["redundant_metadata", "sync", "checksum", "
 export const poolPropertyNames = ["altroot", "bootfs", "cachefile", "comment", "compatibility", "size", "free", "freeing", "checkpoint", "leaked", "allocated", "expandsize", "fragmentation", "capacity", "guid", "load_guid", "health", "dedupratio", "dedupused", "dedupsaved", "bcloneused", "bclonesaved", "bcloneratio", "dedup_table_size", "last_scrubbed_txg", "available", "usable", "used", "class_normal_size", "class_normal_capacity", "class_normal_free", "class_normal_allocated", "class_normal_available", "class_normal_usable", "class_normal_used", "class_normal_expandsize", "class_normal_fragmentation", "class_special_size", "class_special_capacity", "class_special_free", "class_special_allocated", "class_special_available", "class_special_usable", "class_special_used", "class_special_expandsize", "class_special_fragmentation", "class_dedup_size", "class_dedup_capacity", "class_dedup_free", "class_dedup_allocated", "class_dedup_available", "class_dedup_usable", "class_dedup_used", "class_dedup_expandsize", "class_dedup_fragmentation", "class_log_size", "class_log_capacity", "class_log_free", "class_log_allocated", "class_log_available", "class_log_usable", "class_log_used", "class_log_expandsize", "class_log_fragmentation", "class_elog_size", "class_elog_capacity", "class_elog_free", "class_elog_allocated", "class_elog_available", "class_elog_usable", "class_elog_used", "class_elog_expandsize", "class_elog_fragmentation", "class_special_elog_size", "class_special_elog_capacity", "class_special_elog_free", "class_special_elog_allocated", "class_special_elog_available", "class_special_elog_usable", "class_special_elog_used", "class_special_elog_expandsize", "class_special_elog_fragmentation", "version", "ashift", "dedup_table_quota", "delegation", "autoreplace", "listsnapshots", "autoexpand", "readonly", "multihost", "failmode", "autotrim"] as const
 
 export const vdevPropertyNames = ["comment", "path", "devid", "physpath", "encpath", "fru", "parent", "children", "size", "free", "allocated", "expandsize", "fragmentation", "capacity", "guid", "state", "bootsize", "asize", "psize", "ashift", "parity", "failure_domain", "failure_group", "numchildren", "read_errors", "write_errors", "checksum_errors", "initialize_errors", "trim_errors", "slow_ios", "null_ops", "read_ops", "write_ops", "free_ops", "claim_ops", "trim_ops", "null_bytes", "read_bytes", "write_bytes", "free_bytes", "claim_bytes", "trim_bytes", "checksum_n", "checksum_t", "io_n", "io_t", "slow_io_n", "slow_io_t", "removing", "allocating", "raidz_expanding", "sit_out", "trim_support", "autosit", "failfast", "slow_io_events", "scheduler", "alloc_bias", "rotational"] as const
+
+export class CreateFilesystemProperties extends Schema.Class<CreateFilesystemProperties>("effect-zfs/CreateFilesystemProperties")({
+  redundantMetadata: Schema.optionalKey(Schema.Literals(["all", "most", "some", "none"])),
+  sync: Schema.optionalKey(Schema.Literals(["standard", "always", "disabled"])),
+  checksum: Schema.optionalKey(Schema.Literals(["on", "off", "fletcher2", "fletcher4", "sha256", "noparity", "sha512", "skein", "edonr", "blake3"])),
+  dedup: Schema.optionalKey(Schema.Literals(["on", "off", "verify", "sha256", "sha256,verify", "sha512", "sha512,verify", "skein", "skein,verify", "edonr,verify", "blake3", "blake3,verify"])),
+  compression: Schema.optionalKey(Schema.Literals(["on", "off", "lzjb", "gzip", "gzip-1", "gzip-2", "gzip-3", "gzip-4", "gzip-5", "gzip-6", "gzip-7", "gzip-8", "gzip-9", "zle", "lz4", "zstd", "zstd-fast", "zstd-1", "zstd-2", "zstd-3", "zstd-4", "zstd-5", "zstd-6", "zstd-7", "zstd-8", "zstd-9", "zstd-10", "zstd-11", "zstd-12", "zstd-13", "zstd-14", "zstd-15", "zstd-16", "zstd-17", "zstd-18", "zstd-19", "zstd-fast-1", "zstd-fast-2", "zstd-fast-3", "zstd-fast-4", "zstd-fast-5", "zstd-fast-6", "zstd-fast-7", "zstd-fast-8", "zstd-fast-9", "zstd-fast-10", "zstd-fast-20", "zstd-fast-30", "zstd-fast-40", "zstd-fast-50", "zstd-fast-60", "zstd-fast-70", "zstd-fast-80", "zstd-fast-90", "zstd-fast-100", "zstd-fast-500", "zstd-fast-1000"])),
+  snapdir: Schema.optionalKey(Schema.Literals(["hidden", "visible", "disabled"])),
+  snapdev: Schema.optionalKey(Schema.Literals(["hidden", "visible"])),
+  aclmode: Schema.optionalKey(Schema.Literals(["discard", "groupmask", "passthrough", "restricted"])),
+  aclinherit: Schema.optionalKey(Schema.Literals(["discard", "noallow", "restricted", "passthrough", "secure", "passthrough-x"])),
+  copies: Schema.optionalKey(Schema.Literals(["1", "2", "3"])),
+  primarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  secondarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  prefetch: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  logbias: Schema.optionalKey(Schema.Literals(["latency", "throughput"])),
+  xattr: Schema.optionalKey(Schema.Literals(["off", "sa", "on", "dir"])),
+  dnodesize: Schema.optionalKey(Schema.Literals(["legacy", "auto", "1k", "2k", "4k", "8k", "16k"])),
+  volmode: Schema.optionalKey(Schema.Literals(["default", "full", "geom", "dev", "none"])),
+  direct: Schema.optionalKey(Schema.Literals(["disabled", "standard", "always"])),
+  atime: Schema.optionalKey(Schema.Boolean),
+  devices: Schema.optionalKey(Schema.Boolean),
+  exec: Schema.optionalKey(Schema.Boolean),
+  setuid: Schema.optionalKey(Schema.Boolean),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  jailed: Schema.optionalKey(Schema.Boolean),
+  zoned: Schema.optionalKey(Schema.Boolean),
+  zonedUid: Schema.optionalKey(Schema.BigInt),
+  vscan: Schema.optionalKey(Schema.Boolean),
+  nbmand: Schema.optionalKey(Schema.Boolean),
+  overlay: Schema.optionalKey(Schema.Boolean),
+  version: Schema.optionalKey(Schema.Literals(["1", "2", "3", "4", "5", "current"])),
+  canmount: Schema.optionalKey(Schema.Literals(["off", "on", "noauto"])),
+  normalization: Schema.optionalKey(Schema.Literals(["none", "formD", "formKC", "formC", "formKD"])),
+  casesensitivity: Schema.optionalKey(Schema.Literals(["sensitive", "insensitive", "mixed"])),
+  keyformat: Schema.optionalKey(Schema.Literals(["none", "raw", "hex", "passphrase"])),
+  encryption: Schema.optionalKey(Schema.Literals(["on", "off", "aes-128-ccm", "aes-192-ccm", "aes-256-ccm", "aes-128-gcm", "aes-192-gcm", "aes-256-gcm"])),
+  utf8only: Schema.optionalKey(Schema.Boolean),
+  mountpoint: Schema.optionalKey(Schema.String),
+  sharenfs: Schema.optionalKey(Schema.String),
+  sharesmb: Schema.optionalKey(Schema.String),
+  mlslabel: Schema.optionalKey(Schema.String),
+  context: Schema.optionalKey(Schema.String),
+  fscontext: Schema.optionalKey(Schema.String),
+  defcontext: Schema.optionalKey(Schema.String),
+  rootcontext: Schema.optionalKey(Schema.String),
+  keylocation: Schema.optionalKey(Schema.String),
+  pbkdf2iters: Schema.optionalKey(Schema.BigInt),
+  quota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  reservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  refquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  refreservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  filesystemLimit: Schema.optionalKey(Schema.BigInt),
+  snapshotLimit: Schema.optionalKey(Schema.BigInt),
+  defaultuserquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultgroupquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultprojectquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultuserobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultgroupobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultprojectobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  recordsize: Schema.optionalKey(Schema.BigInt),
+  specialSmallBlocks: Schema.optionalKey(Schema.BigInt),
+  longname: Schema.optionalKey(Schema.Boolean),
+}) {}
+
+export class CreateVolumeProperties extends Schema.Class<CreateVolumeProperties>("effect-zfs/CreateVolumeProperties")({
+  redundantMetadata: Schema.optionalKey(Schema.Literals(["all", "most", "some", "none"])),
+  sync: Schema.optionalKey(Schema.Literals(["standard", "always", "disabled"])),
+  checksum: Schema.optionalKey(Schema.Literals(["on", "off", "fletcher2", "fletcher4", "sha256", "noparity", "sha512", "skein", "edonr", "blake3"])),
+  dedup: Schema.optionalKey(Schema.Literals(["on", "off", "verify", "sha256", "sha256,verify", "sha512", "sha512,verify", "skein", "skein,verify", "edonr,verify", "blake3", "blake3,verify"])),
+  compression: Schema.optionalKey(Schema.Literals(["on", "off", "lzjb", "gzip", "gzip-1", "gzip-2", "gzip-3", "gzip-4", "gzip-5", "gzip-6", "gzip-7", "gzip-8", "gzip-9", "zle", "lz4", "zstd", "zstd-fast", "zstd-1", "zstd-2", "zstd-3", "zstd-4", "zstd-5", "zstd-6", "zstd-7", "zstd-8", "zstd-9", "zstd-10", "zstd-11", "zstd-12", "zstd-13", "zstd-14", "zstd-15", "zstd-16", "zstd-17", "zstd-18", "zstd-19", "zstd-fast-1", "zstd-fast-2", "zstd-fast-3", "zstd-fast-4", "zstd-fast-5", "zstd-fast-6", "zstd-fast-7", "zstd-fast-8", "zstd-fast-9", "zstd-fast-10", "zstd-fast-20", "zstd-fast-30", "zstd-fast-40", "zstd-fast-50", "zstd-fast-60", "zstd-fast-70", "zstd-fast-80", "zstd-fast-90", "zstd-fast-100", "zstd-fast-500", "zstd-fast-1000"])),
+  snapdev: Schema.optionalKey(Schema.Literals(["hidden", "visible"])),
+  copies: Schema.optionalKey(Schema.Literals(["1", "2", "3"])),
+  primarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  secondarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  prefetch: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  logbias: Schema.optionalKey(Schema.Literals(["latency", "throughput"])),
+  volmode: Schema.optionalKey(Schema.Literals(["default", "full", "geom", "dev", "none"])),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  keyformat: Schema.optionalKey(Schema.Literals(["none", "raw", "hex", "passphrase"])),
+  encryption: Schema.optionalKey(Schema.Literals(["on", "off", "aes-128-ccm", "aes-192-ccm", "aes-256-ccm", "aes-128-gcm", "aes-192-gcm", "aes-256-gcm"])),
+  mlslabel: Schema.optionalKey(Schema.String),
+  context: Schema.optionalKey(Schema.String),
+  fscontext: Schema.optionalKey(Schema.String),
+  defcontext: Schema.optionalKey(Schema.String),
+  rootcontext: Schema.optionalKey(Schema.String),
+  keylocation: Schema.optionalKey(Schema.String),
+  volblocksize: Schema.optionalKey(Schema.BigInt),
+  volthreading: Schema.optionalKey(Schema.Boolean),
+  pbkdf2iters: Schema.optionalKey(Schema.BigInt),
+  reservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  volsize: Schema.optionalKey(Schema.BigInt),
+  refreservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  snapshotLimit: Schema.optionalKey(Schema.BigInt),
+  specialSmallBlocks: Schema.optionalKey(Schema.BigInt),
+}) {}
+
+export class WritableFilesystemProperties extends Schema.Class<WritableFilesystemProperties>("effect-zfs/WritableFilesystemProperties")({
+  redundantMetadata: Schema.optionalKey(Schema.Literals(["all", "most", "some", "none"])),
+  sync: Schema.optionalKey(Schema.Literals(["standard", "always", "disabled"])),
+  checksum: Schema.optionalKey(Schema.Literals(["on", "off", "fletcher2", "fletcher4", "sha256", "noparity", "sha512", "skein", "edonr", "blake3"])),
+  dedup: Schema.optionalKey(Schema.Literals(["on", "off", "verify", "sha256", "sha256,verify", "sha512", "sha512,verify", "skein", "skein,verify", "edonr,verify", "blake3", "blake3,verify"])),
+  compression: Schema.optionalKey(Schema.Literals(["on", "off", "lzjb", "gzip", "gzip-1", "gzip-2", "gzip-3", "gzip-4", "gzip-5", "gzip-6", "gzip-7", "gzip-8", "gzip-9", "zle", "lz4", "zstd", "zstd-fast", "zstd-1", "zstd-2", "zstd-3", "zstd-4", "zstd-5", "zstd-6", "zstd-7", "zstd-8", "zstd-9", "zstd-10", "zstd-11", "zstd-12", "zstd-13", "zstd-14", "zstd-15", "zstd-16", "zstd-17", "zstd-18", "zstd-19", "zstd-fast-1", "zstd-fast-2", "zstd-fast-3", "zstd-fast-4", "zstd-fast-5", "zstd-fast-6", "zstd-fast-7", "zstd-fast-8", "zstd-fast-9", "zstd-fast-10", "zstd-fast-20", "zstd-fast-30", "zstd-fast-40", "zstd-fast-50", "zstd-fast-60", "zstd-fast-70", "zstd-fast-80", "zstd-fast-90", "zstd-fast-100", "zstd-fast-500", "zstd-fast-1000"])),
+  snapdir: Schema.optionalKey(Schema.Literals(["hidden", "visible", "disabled"])),
+  snapdev: Schema.optionalKey(Schema.Literals(["hidden", "visible"])),
+  aclmode: Schema.optionalKey(Schema.Literals(["discard", "groupmask", "passthrough", "restricted"])),
+  aclinherit: Schema.optionalKey(Schema.Literals(["discard", "noallow", "restricted", "passthrough", "secure", "passthrough-x"])),
+  copies: Schema.optionalKey(Schema.Literals(["1", "2", "3"])),
+  primarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  secondarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  prefetch: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  logbias: Schema.optionalKey(Schema.Literals(["latency", "throughput"])),
+  xattr: Schema.optionalKey(Schema.Literals(["off", "sa", "on", "dir"])),
+  dnodesize: Schema.optionalKey(Schema.Literals(["legacy", "auto", "1k", "2k", "4k", "8k", "16k"])),
+  volmode: Schema.optionalKey(Schema.Literals(["default", "full", "geom", "dev", "none"])),
+  direct: Schema.optionalKey(Schema.Literals(["disabled", "standard", "always"])),
+  atime: Schema.optionalKey(Schema.Boolean),
+  devices: Schema.optionalKey(Schema.Boolean),
+  exec: Schema.optionalKey(Schema.Boolean),
+  setuid: Schema.optionalKey(Schema.Boolean),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  jailed: Schema.optionalKey(Schema.Boolean),
+  zoned: Schema.optionalKey(Schema.Boolean),
+  zonedUid: Schema.optionalKey(Schema.BigInt),
+  vscan: Schema.optionalKey(Schema.Boolean),
+  nbmand: Schema.optionalKey(Schema.Boolean),
+  overlay: Schema.optionalKey(Schema.Boolean),
+  version: Schema.optionalKey(Schema.Literals(["1", "2", "3", "4", "5", "current"])),
+  canmount: Schema.optionalKey(Schema.Literals(["off", "on", "noauto"])),
+  mountpoint: Schema.optionalKey(Schema.String),
+  sharenfs: Schema.optionalKey(Schema.String),
+  sharesmb: Schema.optionalKey(Schema.String),
+  mlslabel: Schema.optionalKey(Schema.String),
+  context: Schema.optionalKey(Schema.String),
+  fscontext: Schema.optionalKey(Schema.String),
+  defcontext: Schema.optionalKey(Schema.String),
+  rootcontext: Schema.optionalKey(Schema.String),
+  keylocation: Schema.optionalKey(Schema.String),
+  quota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  reservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  refquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  refreservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  filesystemLimit: Schema.optionalKey(Schema.BigInt),
+  snapshotLimit: Schema.optionalKey(Schema.BigInt),
+  defaultuserquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultgroupquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultprojectquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultuserobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultgroupobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  defaultprojectobjquota: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  recordsize: Schema.optionalKey(Schema.BigInt),
+  specialSmallBlocks: Schema.optionalKey(Schema.BigInt),
+  longname: Schema.optionalKey(Schema.Boolean),
+}) {}
+
+export class WritableVolumeProperties extends Schema.Class<WritableVolumeProperties>("effect-zfs/WritableVolumeProperties")({
+  redundantMetadata: Schema.optionalKey(Schema.Literals(["all", "most", "some", "none"])),
+  sync: Schema.optionalKey(Schema.Literals(["standard", "always", "disabled"])),
+  checksum: Schema.optionalKey(Schema.Literals(["on", "off", "fletcher2", "fletcher4", "sha256", "noparity", "sha512", "skein", "edonr", "blake3"])),
+  dedup: Schema.optionalKey(Schema.Literals(["on", "off", "verify", "sha256", "sha256,verify", "sha512", "sha512,verify", "skein", "skein,verify", "edonr,verify", "blake3", "blake3,verify"])),
+  compression: Schema.optionalKey(Schema.Literals(["on", "off", "lzjb", "gzip", "gzip-1", "gzip-2", "gzip-3", "gzip-4", "gzip-5", "gzip-6", "gzip-7", "gzip-8", "gzip-9", "zle", "lz4", "zstd", "zstd-fast", "zstd-1", "zstd-2", "zstd-3", "zstd-4", "zstd-5", "zstd-6", "zstd-7", "zstd-8", "zstd-9", "zstd-10", "zstd-11", "zstd-12", "zstd-13", "zstd-14", "zstd-15", "zstd-16", "zstd-17", "zstd-18", "zstd-19", "zstd-fast-1", "zstd-fast-2", "zstd-fast-3", "zstd-fast-4", "zstd-fast-5", "zstd-fast-6", "zstd-fast-7", "zstd-fast-8", "zstd-fast-9", "zstd-fast-10", "zstd-fast-20", "zstd-fast-30", "zstd-fast-40", "zstd-fast-50", "zstd-fast-60", "zstd-fast-70", "zstd-fast-80", "zstd-fast-90", "zstd-fast-100", "zstd-fast-500", "zstd-fast-1000"])),
+  snapdev: Schema.optionalKey(Schema.Literals(["hidden", "visible"])),
+  copies: Schema.optionalKey(Schema.Literals(["1", "2", "3"])),
+  primarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  secondarycache: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  prefetch: Schema.optionalKey(Schema.Literals(["none", "metadata", "all"])),
+  logbias: Schema.optionalKey(Schema.Literals(["latency", "throughput"])),
+  volmode: Schema.optionalKey(Schema.Literals(["default", "full", "geom", "dev", "none"])),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  mlslabel: Schema.optionalKey(Schema.String),
+  context: Schema.optionalKey(Schema.String),
+  fscontext: Schema.optionalKey(Schema.String),
+  defcontext: Schema.optionalKey(Schema.String),
+  rootcontext: Schema.optionalKey(Schema.String),
+  keylocation: Schema.optionalKey(Schema.String),
+  volthreading: Schema.optionalKey(Schema.Boolean),
+  reservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  volsize: Schema.optionalKey(Schema.BigInt),
+  refreservation: Schema.optionalKey(Schema.Union([Schema.Literals(["none"]), Schema.BigInt])),
+  snapshotLimit: Schema.optionalKey(Schema.BigInt),
+  specialSmallBlocks: Schema.optionalKey(Schema.BigInt),
+}) {}
+
+export class CreatePoolProperties extends Schema.Class<CreatePoolProperties>("effect-zfs/CreatePoolProperties")({
+  altroot: Schema.optionalKey(Schema.String),
+  bootfs: Schema.optionalKey(Schema.String),
+  cachefile: Schema.optionalKey(Schema.String),
+  comment: Schema.optionalKey(Schema.String),
+  compatibility: Schema.optionalKey(Schema.String),
+  version: Schema.optionalKey(Schema.BigInt),
+  ashift: Schema.optionalKey(Schema.Number),
+  dedupTableQuota: Schema.optionalKey(Schema.BigInt),
+  delegation: Schema.optionalKey(Schema.Boolean),
+  autoreplace: Schema.optionalKey(Schema.Boolean),
+  listsnapshots: Schema.optionalKey(Schema.Boolean),
+  autoexpand: Schema.optionalKey(Schema.Boolean),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  multihost: Schema.optionalKey(Schema.Boolean),
+  failmode: Schema.optionalKey(Schema.Literals(["wait", "continue", "panic"])),
+  autotrim: Schema.optionalKey(Schema.Boolean),
+}) {}
+
+export class WritablePoolProperties extends Schema.Class<WritablePoolProperties>("effect-zfs/WritablePoolProperties")({
+  altroot: Schema.optionalKey(Schema.String),
+  bootfs: Schema.optionalKey(Schema.String),
+  cachefile: Schema.optionalKey(Schema.String),
+  comment: Schema.optionalKey(Schema.String),
+  compatibility: Schema.optionalKey(Schema.String),
+  version: Schema.optionalKey(Schema.BigInt),
+  ashift: Schema.optionalKey(Schema.Number),
+  dedupTableQuota: Schema.optionalKey(Schema.BigInt),
+  delegation: Schema.optionalKey(Schema.Boolean),
+  autoreplace: Schema.optionalKey(Schema.Boolean),
+  listsnapshots: Schema.optionalKey(Schema.Boolean),
+  autoexpand: Schema.optionalKey(Schema.Boolean),
+  readonly: Schema.optionalKey(Schema.Boolean),
+  multihost: Schema.optionalKey(Schema.Boolean),
+  failmode: Schema.optionalKey(Schema.Literals(["wait", "continue", "panic"])),
+  autotrim: Schema.optionalKey(Schema.Boolean),
+}) {}
+
+export class WritableVdevProperties extends Schema.Class<WritableVdevProperties>("effect-zfs/WritableVdevProperties")({
+  comment: Schema.optionalKey(Schema.String),
+  path: Schema.optionalKey(Schema.String),
+  checksumN: Schema.optionalKey(Schema.BigInt),
+  checksumT: Schema.optionalKey(Schema.BigInt),
+  ioN: Schema.optionalKey(Schema.BigInt),
+  ioT: Schema.optionalKey(Schema.BigInt),
+  slowIoN: Schema.optionalKey(Schema.BigInt),
+  slowIoT: Schema.optionalKey(Schema.BigInt),
+  allocating: Schema.optionalKey(Schema.Literals(["off", "on", "-"])),
+  sitOut: Schema.optionalKey(Schema.Boolean),
+  autosit: Schema.optionalKey(Schema.Boolean),
+  failfast: Schema.optionalKey(Schema.Literals(["off", "on", "inherit"])),
+  slowIoEvents: Schema.optionalKey(Schema.Boolean),
+  scheduler: Schema.optionalKey(Schema.Literals(["auto", "on", "off"])),
+  allocBias: Schema.optionalKey(Schema.Literals(["none", "log", "special", "dedup"])),
+}) {}

@@ -1,16 +1,49 @@
 {
   "name": "effect-zfs",
-  "version": "0.0.0-alpha.0",
+  "version": "0.1.0",
+  "description": "Effect v4 library for Linux OpenZFS (2.2.2–2.4.4)",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agustif/effect-zfs.git",
+    "directory": "packages/effect-zfs"
+  },
+  "homepage": "https://github.com/agustif/effect-zfs",
+  "bugs": {
+    "url": "https://github.com/agustif/effect-zfs/issues"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
   "exports": {
     ".": "./src/index.ts",
-    "./cli": "./src/Cli.ts",
-    "./test": "./src/Test.ts",
-    "./native": "./src/Native.ts"
+    "./cli": "./src/cli/adapter.ts",
+    "./test": "./src/protocol/test.ts",
+    "./native": "./src/native/index.ts"
   },
   "peerDependencies": {
-    "effect": ">=4.0.0-rc.111 <5"
-  }
+    "effect": ">=4.0.0-rc.111 <5",
+    "@effect/platform-node": ">=4.0.0-rc.111 <5"
+  },
+  "peerDependenciesMeta": {
+    "@effect/platform-node": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "koffi": "^3.1.6"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [
+    "effect",
+    "zfs",
+    "openzfs",
+    "libzfs"
+  ]
 }

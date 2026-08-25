@@ -1,17 +1,12 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Stream } from "effect"
-import { abortReceiveArgv, receiveArgv } from "../src/Cli.js"
-import {
-  AbortReceive,
-  EncodedProperty,
-  Receive,
-  propertyName
-} from "../src/Args.js"
-import { datasetName, snapshotName } from "../src/Name.js"
-import { lzcReceiveKind } from "../src/Native.js"
-import { Replication } from "../src/Replication.js"
+import { AbortReceive, EncodedProperty, propertyName, Receive } from "../src/args/index.js"
+import { abortReceiveArgv, receiveArgv } from "../src/cli/index.js"
 import { layer } from "../src/index.js"
-import * as Test from "../src/Test.js"
+import { lzcReceiveKind } from "../src/native/index.js"
+import * as Test from "../src/protocol/test.js"
+import { datasetName, snapshotName } from "../src/schema/name.js"
+import { Replication } from "../src/services/replication.js"
 
 const target = datasetName("tank/dst")
 
@@ -24,20 +19,22 @@ describe("zfs receive args and native lzc selection", () => {
   })
 
   it("emits -d/-e dest, -o/-x props, -M/-n/-s/-h/-v, heal, and origin", () => {
-    const argv = receiveArgv(new Receive({
-      target: datasetName("tank/recv"),
-      dest: "prefix",
-      origin: snapshotName(datasetName("tank/origin"), "seed"),
-      properties: [new EncodedProperty({ name: propertyName("compression"), value: "lz4" })],
-      exclude: [propertyName("mountpoint")],
-      forceUnmount: true,
-      dryRun: true,
-      resumable: true,
-      skipHolds: true,
-      verbose: true,
-      heal: true,
-      unmounted: true
-    }))
+    const argv = receiveArgv(
+      new Receive({
+        target: datasetName("tank/recv"),
+        dest: "prefix",
+        origin: snapshotName(datasetName("tank/origin"), "seed"),
+        properties: [new EncodedProperty({ name: propertyName("compression"), value: "lz4" })],
+        exclude: [propertyName("mountpoint")],
+        forceUnmount: true,
+        dryRun: true,
+        resumable: true,
+        skipHolds: true,
+        verbose: true,
+        heal: true,
+        unmounted: true
+      })
+    )
     assert.deepStrictEqual(argv, [
       "receive",
       "-c",
@@ -76,10 +73,12 @@ describe("zfs receive args and native lzc selection", () => {
       "lzc_receive_resumable"
     )
     assert.strictEqual(
-      lzcReceiveKind(new Receive({
-        target,
-        properties: [new EncodedProperty({ name: propertyName("compression"), value: "lz4" })]
-      })),
+      lzcReceiveKind(
+        new Receive({
+          target,
+          properties: [new EncodedProperty({ name: propertyName("compression"), value: "lz4" })]
+        })
+      ),
       "lzc_receive_with_cmdprops"
     )
     assert.strictEqual(
@@ -107,8 +106,7 @@ describe("zfs receive args and native lzc selection", () => {
           assert.strictEqual(input.target, target)
         }
       }))
-    )
-  )
+    ))
 })
 
 describe("replication receive flags", () => {
